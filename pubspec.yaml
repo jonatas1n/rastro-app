@@ -1,0 +1,42 @@
+name: rastro
+description: Rastro — consciência financeira diária
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Notificações
+  flutter_notification_listener: ^1.4.0
+
+  # Estado
+  provider: ^6.1.1
+
+  # Banco de dados local
+  sqflite: ^2.3.0
+  path: ^1.9.0
+
+  # Notificações locais (resumo diário)
+  flutter_local_notifications: ^19.5.0
+
+  # Utilitários
+  intl: ^0.20.2
+  shared_preferences: ^2.2.2
+  google_fonts: ^6.1.0
+
+  # HTTP + UUID para sync
+  http: ^1.2.1
+  uuid: ^4.3.3
+  timezone: ^0.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
