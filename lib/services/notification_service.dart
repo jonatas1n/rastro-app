@@ -1,27 +1,33 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_notification_listener/flutter_notification_listener.dart';
-import 'notification_parser.dart';
-import 'database_service.dart';
-import 'local_notification_service.dart';
+
 import '../models/transaction.dart';
-import 'spending_summary_notification.dart';
+import 'notification_parser.dart';
+
+typedef NotificationTransactionHandler = Future<void> Function(Transaction tx);
 
 /// Gerencia a escuta de notificações do sistema.
 ///
-/// Precisa ser inicializado em main() após o app estar pronto.
+/// Precisa ser inicializado em main() após WidgetsFlutterBinding.
 /// A permissão de NotificationListenerService deve ser concedida
 /// pelo usuário em Configurações > Notificações > Acesso a notificações.
 class NotificationService {
-  static final _db = DatabaseService();
   static bool _listening = false;
+  static NotificationTransactionHandler? _onTransaction;
+
+  /// Registra callback com acesso ao [TransactionProvider] (UI + sync).
+  static void setTransactionHandler(NotificationTransactionHandler? handler) {
+    _onTransaction = handler;
+  }
 
   /// Inicializa o listener. Chame em main() após WidgetsFlutterBinding.
   static Future<void> init() async {
+    await NotificationsListener.initialize();
+
     if (!_listening) {
       NotificationsListener.receivePort?.listen(_onEvent);
       _listening = true;
     }
-
-    await NotificationsListener.initialize();
 
     final running = await NotificationsListener.isRunning;
     if (running != true) {
@@ -35,6 +41,9 @@ class NotificationService {
   static Future<bool> get hasPermission async =>
       await NotificationsListener.hasPermission ?? false;
 
+  static Future<bool> get isServiceRunning async =>
+      await NotificationsListener.isRunning ?? false;
+
   static Future<bool> requestPermission() async {
     await NotificationsListener.openPermissionSettings();
     return await NotificationsListener.hasPermission ?? false;
@@ -44,7 +53,7 @@ class NotificationService {
     await NotificationsListener.stopService();
   }
 
-  static void _onEvent(dynamic event) async {
+  static Future<void> _onEvent(dynamic event) async {
     if (event is! NotificationEvent) return;
 
     final title = event.title ?? '';
@@ -66,8 +75,19 @@ class NotificationService {
       rawNotification: '$title | $body',
     );
 
-    await _db.insert(tx);
-    await LocalNotificationService.showTransactionAlert(tx);
-    await SpendingSummaryNotification.refresh();
+    final handler = _onTransaction;
+    if (handler == null) {
+      debugPrint(
+        'NotificationService: gasto ignorado na UI (handler não registrado) '
+        '${parsed.amount} ${parsed.place}',
+      );
+      return;
+    }
+
+    try {
+      await handler(tx);
+    } catch (e, st) {
+      debugPrint('NotificationService: falha ao registrar gasto: $e\n$st');
+    }
   }
 }

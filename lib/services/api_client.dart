@@ -6,7 +6,7 @@ import '../models/transaction.dart';
 class ApiClient {
   static const baseUrl = String.fromEnvironment(
     'API_URL',
-    defaultValue: 'https://api.rastro.app',
+    defaultValue: 'https://rastro-api.vercel.app',
   );
 
   static const _baseUrl = baseUrl;
@@ -69,6 +69,9 @@ class ApiClient {
           }
         }
         return detail.toString();
+      }
+      if (decoded is Map && decoded['message'] is String) {
+        return decoded['message'] as String;
       }
     } catch (_) {
       // corpo não-JSON (ex.: "Internal Server Error")

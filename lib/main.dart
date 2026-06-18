@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_notification_listener/flutter_notification_listener.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -12,6 +11,7 @@ import 'services/api_client.dart';
 import 'services/notification_service.dart';
 import 'services/local_notification_service.dart';
 import 'services/spending_summary_notification.dart';
+import 'models/transaction.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/permission_screen.dart';
@@ -75,8 +75,12 @@ class _RastroAppState extends State<RastroApp> with WidgetsBindingObserver {
   }
 
   Future<void> _checkPermission() async {
-    final running = await NotificationsListener.isRunning ?? false;
-    if (mounted) setState(() => _hasNotifPermission = running);
+    final granted = await NotificationService.hasPermission;
+    final running = await NotificationService.isServiceRunning;
+    if (granted && !running) {
+      await NotificationService.init();
+    }
+    if (mounted) setState(() => _hasNotifPermission = granted);
   }
 
   @override
@@ -145,6 +149,7 @@ class _HomeWithSpendingNotificationState
   @override
   void initState() {
     super.initState();
+    NotificationService.setTransactionHandler(_onBankNotification);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SpendingSummaryNotification.startIfEnabled();
     });
@@ -152,8 +157,18 @@ class _HomeWithSpendingNotificationState
 
   @override
   void dispose() {
+    NotificationService.setTransactionHandler(null);
     SpendingSummaryNotification.stop();
     super.dispose();
+  }
+
+  Future<void> _onBankNotification(Transaction tx) async {
+    if (!mounted) return;
+    final txProv = context.read<TransactionProvider>();
+    final finProv = context.read<FinanceProfileProvider>();
+    await txProv.addTransaction(tx);
+    await finProv.refreshSpending();
+    await LocalNotificationService.showTransactionAlert(tx);
   }
 
   @override
