@@ -28,7 +28,7 @@ class SavingsCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: RastroColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: RastroColors.safe.withOpacity(0.22), width: 1.5),
+        border: Border.all(color: RastroColors.safe.withValues(alpha: 0.22), width: 1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -36,10 +36,10 @@ class SavingsCard extends StatelessWidget {
           // Header strip
           Container(
             decoration: BoxDecoration(
-              color: RastroColors.safe.withOpacity(0.06),
+              color: RastroColors.safe.withValues(alpha: 0.06),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
               border: Border(
-                bottom: BorderSide(color: RastroColors.safe.withOpacity(0.15)),
+                bottom: BorderSide(color: RastroColors.safe.withValues(alpha: 0.15)),
               ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
@@ -72,7 +72,7 @@ class SavingsCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: RastroColors.card,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: RastroColors.safe.withOpacity(0.18), width: 1.5),
+                    border: Border.all(color: RastroColors.safe.withValues(alpha: 0.18), width: 1.5),
                   ),
                   padding: const EdgeInsets.all(14),
                   child: Column(
@@ -131,7 +131,7 @@ class _MiniCell extends StatelessWidget {
       decoration: BoxDecoration(
         color: RastroColors.card,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: RastroColors.safe.withOpacity(0.16), width: 1.5),
+        border: Border.all(color: RastroColors.safe.withValues(alpha: 0.16), width: 1.5),
       ),
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
       child: Column(
@@ -159,9 +159,9 @@ class _PillBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-        color:        color.withOpacity(0.1),
+        color:        color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withOpacity(0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(text,
           style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
@@ -204,14 +204,14 @@ class _SavingsBarChart extends StatelessWidget {
                 Text(label,
                     style: GoogleFonts.dmSans(
                         fontSize: 9, fontWeight: FontWeight.w700,
-                        color: RastroColors.safe.withOpacity(opacity + 0.2))),
+                        color: RastroColors.safe.withValues(alpha: opacity + 0.2))),
                 const SizedBox(height: 4),
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.symmetric(horizontal: 6),
                   height: height,
                   decoration: BoxDecoration(
-                    color: RastroColors.safe.withOpacity(opacity),
+                    color: RastroColors.safe.withValues(alpha: opacity),
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                   ),
                 ),

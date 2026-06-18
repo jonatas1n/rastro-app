@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:sqflite/sqflite.dart' hide Transaction;
 import 'package:path/path.dart';
 import '../models/transaction.dart';
+import '../models/finance_profile.dart';
 
 class DatabaseService {
   static Database? _db;
@@ -13,7 +14,7 @@ class DatabaseService {
 
   static Future<Database> _init() async {
     final path = join(await getDatabasesPath(), 'rastro.db');
-    return openDatabase(path, version: 2, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    return openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -38,6 +39,21 @@ class DatabaseService {
         payload   TEXT    NOT NULL
       )
     ''');
+    await db.execute('''
+      CREATE TABLE finance_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        monthly_income REAL NOT NULL DEFAULT 0,
+        pay_day INTEGER NOT NULL DEFAULT 1,
+        cycle_end_day INTEGER NOT NULL DEFAULT 31,
+        weekly_limit_enabled INTEGER NOT NULL DEFAULT 0,
+        weekly_spending_limit REAL,
+        monthly_limit_enabled INTEGER NOT NULL DEFAULT 0,
+        monthly_spending_limit REAL,
+        month_end_balance_enabled INTEGER NOT NULL DEFAULT 0,
+        month_end_target_balance REAL
+      )
+    ''');
+    await db.insert('finance_profile', {'id': 1, ...FinanceProfile().toMap()});
   }
 
   static Future<void> _onUpgrade(Database db, int oldV, int newV) async {
@@ -53,13 +69,33 @@ class DatabaseService {
         )
       ''');
     }
+    if (oldV < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS finance_profile (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          monthly_income REAL NOT NULL DEFAULT 0,
+          pay_day INTEGER NOT NULL DEFAULT 1,
+          cycle_end_day INTEGER NOT NULL DEFAULT 31,
+          weekly_limit_enabled INTEGER NOT NULL DEFAULT 0,
+          weekly_spending_limit REAL,
+          monthly_limit_enabled INTEGER NOT NULL DEFAULT 0,
+          monthly_spending_limit REAL,
+          month_end_balance_enabled INTEGER NOT NULL DEFAULT 0,
+          month_end_target_balance REAL
+        )
+      ''');
+      final rows = await db.query('finance_profile', where: 'id = 1');
+      if (rows.isEmpty) {
+        await db.insert('finance_profile', {'id': 1, ...FinanceProfile().toMap()});
+      }
+    }
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
 
   Future<Transaction> insert(Transaction t) async {
     final database = await db;
-    final id = await database.insert('transactions', t.toMap(),
+    await database.insert('transactions', t.toMap(),
         conflictAlgorithm: ConflictAlgorithm.ignore);
     return t.copyWith();
   }
@@ -79,6 +115,66 @@ class DatabaseService {
       'transactions',
       {'category': category.dbValue},
       where: 'local_id = ?', whereArgs: [localId],
+    );
+  }
+
+  Future<void> updateTransaction(
+    String localId, {
+    String? place,
+    double? amount,
+    TransactionCategory? category,
+    bool? isEssential,
+    int? timestampMs,
+  }) async {
+    final database = await db;
+    final data = <String, dynamic>{};
+    if (place != null) data['place'] = place;
+    if (amount != null) data['amount'] = amount;
+    if (category != null) data['category'] = category.dbValue;
+    if (isEssential != null) data['is_essential'] = isEssential ? 1 : 0;
+    if (timestampMs != null) data['timestamp'] = timestampMs;
+    if (data.isEmpty) return;
+    await database.update(
+      'transactions',
+      data,
+      where: 'local_id = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  Future<double> sumBetween(int startMs, int endMs) async {
+    final database = await db;
+    final result = await database.rawQuery(
+      'SELECT COALESCE(SUM(amount), 0) as total FROM transactions '
+      'WHERE timestamp >= ? AND timestamp <= ?',
+      [startMs, endMs],
+    );
+    return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
+  Future<int> countBetween(int startMs, int endMs) async {
+    final database = await db;
+    final result = await database.rawQuery(
+      'SELECT COUNT(*) as c FROM transactions '
+      'WHERE timestamp >= ? AND timestamp <= ?',
+      [startMs, endMs],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<FinanceProfile> getFinanceProfile() async {
+    final database = await db;
+    final rows = await database.query('finance_profile', where: 'id = 1');
+    if (rows.isEmpty) return const FinanceProfile();
+    return FinanceProfile.fromMap(rows.first);
+  }
+
+  Future<void> saveFinanceProfile(FinanceProfile profile) async {
+    final database = await db;
+    await database.insert(
+      'finance_profile',
+      {'id': 1, ...profile.toMap()},
+      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 

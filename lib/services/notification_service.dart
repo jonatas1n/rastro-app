@@ -3,6 +3,7 @@ import 'notification_parser.dart';
 import 'database_service.dart';
 import 'local_notification_service.dart';
 import '../models/transaction.dart';
+import 'spending_summary_notification.dart';
 
 /// Gerencia a escuta de notificações do sistema.
 ///
@@ -49,7 +50,11 @@ class NotificationService {
     final title = event.title ?? '';
     final body = event.text ?? '';
 
-    final parsed = NotificationParser.parse(title, body);
+    final parsed = NotificationParser.parse(
+      title,
+      body,
+      packageName: event.packageName,
+    );
     if (parsed == null) return;
 
     final tx = Transaction(
@@ -63,5 +68,6 @@ class NotificationService {
 
     await _db.insert(tx);
     await LocalNotificationService.showTransactionAlert(tx);
+    await SpendingSummaryNotification.refresh();
   }
 }

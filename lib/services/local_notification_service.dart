@@ -10,6 +10,8 @@ class LocalNotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _tzReady = false;
 
+  static const persistentSpendingSummaryId = 1001;
+
   static Future<void> init() async {
     if (!_tzReady) {
       tz_data.initializeTimeZones();
@@ -21,6 +23,53 @@ class LocalNotificationService {
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
     );
+    await ensureAndroidPostPermission();
+  }
+
+  static Future<void> ensureAndroidPostPermission() async {
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    await android?.requestNotificationsPermission();
+  }
+
+  /// Resumo fixo na barra de status (não dismissível; desligar em Configurações).
+  static Future<void> showPersistentSpendingSummary({
+    required String title,
+    required String summary,
+    required String detail,
+  }) async {
+    await _plugin.show(
+      persistentSpendingSummaryId,
+      title,
+      summary,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'spending_summary',
+          'Resumo de gastos',
+          channelDescription:
+              'Acompanha gastos e metas. Desative em Renda e metas.',
+          importance: Importance.low,
+          priority: Priority.low,
+          icon: '@mipmap/ic_launcher',
+          ongoing: true,
+          autoCancel: false,
+          onlyAlertOnce: true,
+          showWhen: false,
+          visibility: NotificationVisibility.public,
+          category: AndroidNotificationCategory.status,
+          styleInformation: BigTextStyleInformation(
+            detail,
+            contentTitle: summary,
+            summaryText: title,
+            htmlFormatBigText: false,
+          ),
+        ),
+      ),
+    );
+  }
+
+  static Future<void> cancelPersistentSpendingSummary() async {
+    await _plugin.cancel(persistentSpendingSummaryId);
   }
 
   /// Notificação imediata ao detectar um gasto
@@ -47,12 +96,11 @@ class LocalNotificationService {
   }) async {
     final diff = totalToday - avgWeek;
     final diffPct = avgWeek > 0 ? (diff / avgWeek * 100).round() : 0;
-    final arrow = diff > 0 ? '↑' : '↓';
 
     await _plugin.zonedSchedule(
       999,
       'Resumo do dia · ${_fmt.format(totalToday)}',
-      '$topCategory  ·  $arrow${diffPct.abs()}% vs média da semana',
+      '$topCategory · ${diffPct.abs()}% ${diff > 0 ? 'acima' : 'abaixo'} da média diária recente',
       _todayAt22(),
       NotificationDetails(
         android: _androidDetails(

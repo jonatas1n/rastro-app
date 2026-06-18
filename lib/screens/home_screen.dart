@@ -4,13 +4,18 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../providers/transaction_provider.dart';
 import '../providers/messages_provider.dart';
+import '../providers/finance_profile_provider.dart';
 import '../theme/colors.dart';
 import '../models/transaction.dart';
 import '../widgets/shared.dart';
 import '../widgets/savings_card.dart';
 import '../widgets/transaction_item.dart';
 import "../widgets/monthly_progress.dart";
+import '../widgets/budget_progress_card.dart';
 import "../widgets/messages_sheet.dart";
+import '../widgets/edit_transaction_sheet.dart';
+import '../widgets/add_transaction_sheet.dart';
+import 'finance_settings_screen.dart';
 import 'history_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -26,6 +31,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<TransactionProvider>().load();
+      context.read<FinanceProfileProvider>().refreshSpending();
       context.read<MessagesProvider>().fetch();
     });
   }
@@ -36,19 +42,36 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       backgroundColor: RastroColors.base,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => showAddTransactionSheet(context),
+        backgroundColor: RastroColors.accent,
+        foregroundColor: Colors.black,
+        icon: const Icon(Icons.add_rounded),
+        label: Text(
+          'Gasto',
+          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
+        ),
+      ),
       body: SafeArea(
         child: prov.loading
             ? const Center(child: CircularProgressIndicator(color: RastroColors.accent))
             : RefreshIndicator(
                 color: RastroColors.accent,
                 backgroundColor: RastroColors.surface,
-                onRefresh: () => context.read<TransactionProvider>().load(),
+                onRefresh: () async {
+                  final txProv = context.read<TransactionProvider>();
+                  final finProv = context.read<FinanceProfileProvider>();
+                  await txProv.load();
+                  await finProv.refreshSpending();
+                },
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(14, 20, 14, 40),
+                  padding: const EdgeInsets.fromLTRB(14, 20, 14, 88),
                   children: [
                     _Header(prov: prov),
                     const SizedBox(height: 12),
                     _TotalCard(prov: prov),
+                    const SizedBox(height: 10),
+                    const BudgetProgressCard(),
                     const SizedBox(height: 10),
                     SavingsCard(
                       nonEssentialToday: prov.nonEssentialToday,
@@ -60,17 +83,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     _SummaryCards(prov: prov),
                     const SizedBox(height: 16),
                     SectionLabel(title: 'Gastos de hoje', right: 'Toque para marcar'),
-                    if (prov.todayList.isEmpty)
-                      _EmptyToday()
-                    else
-                      ...prov.todayList.map((tx) => Padding(
-                            padding: const EdgeInsets.only(bottom: 6),
-                            child: TransactionItem(
-                              tx:       tx,
-                              onToggle: () =>
-                                  context.read<TransactionProvider>().toggleEssential(tx),
-                            ),
-                          )),
+                    _TodayTransactionsCard(prov: prov),
                     const SizedBox(height: 16),
                     SectionLabel(
                       title: 'Progressão do mês',
@@ -97,7 +110,12 @@ class _Header extends StatelessWidget {
     final total    = prov.totalToday;
     final diffPct  = avgWeek > 0 ? ((total - avgWeek) / avgWeek * 100).round() : 0;
     final isUp     = diffPct > 0;
-    final diffColor = isUp ? RastroColors.danger : RastroColors.safe;
+    final isDown   = diffPct < 0;
+    final diffColor = isUp
+        ? RastroColors.danger
+        : isDown
+            ? RastroColors.safe
+            : RastroColors.muted;
     final weekday  = DateFormat('EEEE · d MMM', 'pt_BR').format(DateTime.now());
 
     return Row(
@@ -115,6 +133,24 @@ class _Header extends StatelessWidget {
         ]),
         Row(
           children: [
+            GestureDetector(
+              onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const FinanceSettingsScreen())),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: RastroColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: RastroColors.border),
+                ),
+                child: const Icon(Icons.tune_rounded,
+                    color: RastroColors.sub, size: 18),
+              ),
+            ),
+            const SizedBox(width: 8),
             GestureDetector(
               onTap: () => Navigator.push(context,
                   MaterialPageRoute(builder: (_) => const HistoryScreen())),
@@ -135,14 +171,32 @@ class _Header extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
                 decoration: BoxDecoration(
-                  color:        diffColor.withOpacity(0.08),
+                  color:        diffColor.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: diffColor.withOpacity(0.28)),
+                  border: Border.all(color: diffColor.withValues(alpha: 0.28)),
                 ),
-                child: Text(
-                  '${isUp ? '↑' : '↓'} ${diffPct.abs()}% vs semana',
-                  style: GoogleFonts.dmSans(
-                      fontSize: 11, fontWeight: FontWeight.w600, color: diffColor),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      isUp
+                          ? Icons.arrow_upward_rounded
+                          : isDown
+                              ? Icons.arrow_downward_rounded
+                              : Icons.remove_rounded,
+                      size: 14,
+                      color: diffColor,
+                    ),
+                    const SizedBox(width: 2),
+                    Text(
+                      '${diffPct.abs()}%',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: diffColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -171,10 +225,26 @@ class _TotalCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('TOTAL HOJE',
-              style: GoogleFonts.dmSans(
-                  fontSize: 11, fontWeight: FontWeight.w600, color: RastroColors.muted,
-                  letterSpacing: 0.4)),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('TOTAL HOJE',
+                  style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: RastroColors.muted,
+                      letterSpacing: 0.4)),
+              const Spacer(),
+              Text(
+                _todayCountLabel(prov.todayList.length),
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.sub,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 8),
           FmtValue(amount: total, size: 48),
           if (nonEss > 0) ...[
@@ -190,7 +260,7 @@ class _TotalCard extends StatelessWidget {
                         style: const TextStyle(color: RastroColors.sub, fontWeight: FontWeight.w600)),
                   ],
                 )),
-                Text('Cortável R\$ ${nonEss.toStringAsFixed(0)}',
+                Text('Não-essencial R\$ ${nonEss.toStringAsFixed(0)}',
                     style: GoogleFonts.dmSans(
                         fontSize: 11, fontWeight: FontWeight.w600, color: RastroColors.danger)),
               ],
@@ -217,9 +287,15 @@ class _TotalCard extends StatelessWidget {
       ),
     );
   }
+
+  static String _todayCountLabel(int count) {
+    if (count == 0) return 'Nenhum gasto hoje';
+    if (count == 1) return '1 gasto hoje';
+    return '$count gastos hoje';
+  }
 }
 
-// ── 3 Summary Cards ──────────────────────────────────────────────────────────
+// ── Summary Cards ────────────────────────────────────────────────────────────
 
 class _SummaryCards extends StatelessWidget {
   final TransactionProvider prov;
@@ -241,12 +317,6 @@ class _SummaryCards extends StatelessWidget {
         label:   'Top categoria',
         value:   prov.monthByCategory[topCat] ?? 0,
         sub:     topCat != null ? '${topCat.emoji} ${topCat.label}' : '—',
-      )),
-      const SizedBox(width: 8),
-      Expanded(child: _CountCard(
-        label: 'Transações',
-        count: prov.todayList.length,
-        sub:   'hoje',
       )),
     ]);
   }
@@ -278,28 +348,75 @@ class _SmallCard extends StatelessWidget {
   }
 }
 
-class _CountCard extends StatelessWidget {
-  final String label, sub;
-  final int    count;
-  const _CountCard({required this.label, required this.count, required this.sub});
+// ── Gastos de hoje (card + histórico) ────────────────────────────────────────
+
+class _TodayTransactionsCard extends StatelessWidget {
+  final TransactionProvider prov;
+  const _TodayTransactionsCard({required this.prov});
+
+  void _openHistory(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HistoryScreen()),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final txs = prov.todayList;
+
     return RastroCard(
-      radius: 10,
-      padding: const EdgeInsets.fromLTRB(11, 13, 11, 11),
-      background: RastroColors.surface,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label,
-            style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w600,
-                color: RastroColors.muted)),
-        const SizedBox(height: 7),
-        Text('$count',
-            style: GoogleFonts.dmSans(
-                fontSize: 32, fontWeight: FontWeight.w800, color: RastroColors.accent, height: 1)),
-        const SizedBox(height: 5),
-        Text(sub, style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
-      ]),
+      padding: EdgeInsets.zero,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (txs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
+              child: _EmptyToday(),
+            )
+          else
+            ...txs.map((tx) => Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+                  child: TransactionItem(
+                    tx: tx,
+                    onToggle: () =>
+                        context.read<TransactionProvider>().toggleEssential(tx),
+                    onEdit: () => showEditTransactionSheet(context, tx),
+                  ),
+                )),
+          if (txs.isNotEmpty) const SizedBox(height: 6),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => _openHistory(context),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Ver histórico completo',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: RastroColors.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: RastroColors.accent,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -318,7 +435,7 @@ class _EmptyToday extends StatelessWidget {
         Text('Nenhum gasto registrado ainda hoje',
             style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.muted)),
         const SizedBox(height: 4),
-        Text('As notificações serão capturadas automaticamente',
+        Text('Use o botão Gasto ou aguarde notificações do banco',
             style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted)),
       ]),
     );

@@ -4,10 +4,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction.dart';
 
 class ApiClient {
-  static const _baseUrl = String.fromEnvironment(
+  static const baseUrl = String.fromEnvironment(
     'API_URL',
     defaultValue: 'https://api.rastro.app',
   );
+
+  static const _baseUrl = baseUrl;
 
   String? _token;
 
@@ -103,11 +105,23 @@ class ApiClient {
     return list.map((e) => SyncedTransaction.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  Future<void> updateTransaction(String localId, {bool? isEssential, String? category}) async {
+  Future<void> updateTransaction(
+    String localId, {
+    bool? isEssential,
+    String? category,
+    String? place,
+    double? amount,
+    DateTime? timestamp,
+  }) async {
     await _loadToken();
     final body = <String, dynamic>{};
     if (isEssential != null) body['is_essential'] = isEssential;
     if (category    != null) body['category']     = category;
+    if (place       != null) body['place']        = place;
+    if (amount      != null) body['amount']       = amount;
+    if (timestamp   != null) {
+      body['timestamp'] = timestamp.toUtc().toIso8601String();
+    }
 
     await http.patch(
       Uri.parse('$_baseUrl/transactions/$localId'),

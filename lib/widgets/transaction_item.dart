@@ -18,8 +18,14 @@ Color _catColor(TransactionCategory cat) => switch (cat) {
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
   final VoidCallback onToggle;
+  final VoidCallback? onEdit;
 
-  const TransactionItem({super.key, required this.tx, required this.onToggle});
+  const TransactionItem({
+    super.key,
+    required this.tx,
+    required this.onToggle,
+    this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +37,11 @@ class TransactionItem extends StatelessWidget {
 
     return GestureDetector(
       onTap: onToggle,
+      onLongPress: onEdit,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: essential ? RastroColors.card : RastroColors.danger.withOpacity(0.05),
+          color: essential ? RastroColors.card : RastroColors.danger.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
           border: Border(
             left: BorderSide(
@@ -42,15 +49,15 @@ class TransactionItem extends StatelessWidget {
               width: 3,
             ),
             top: BorderSide(
-              color: essential ? RastroColors.border : RastroColors.danger.withOpacity(0.2),
+              color: essential ? RastroColors.border : RastroColors.danger.withValues(alpha: 0.2),
               width: 1.5,
             ),
             right: BorderSide(
-              color: essential ? RastroColors.border : RastroColors.danger.withOpacity(0.2),
+              color: essential ? RastroColors.border : RastroColors.danger.withValues(alpha: 0.2),
               width: 1.5,
             ),
             bottom: BorderSide(
-              color: essential ? RastroColors.border : RastroColors.danger.withOpacity(0.2),
+              color: essential ? RastroColors.border : RastroColors.danger.withValues(alpha: 0.2),
               width: 1.5,
             ),
           ),
@@ -77,7 +84,7 @@ class TransactionItem extends StatelessWidget {
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: essential ? RastroColors.text : RastroColors.muted,
                       decoration: essential ? null : TextDecoration.lineThrough,
-                      decorationColor: RastroColors.danger.withOpacity(0.6),
+                      decorationColor: RastroColors.danger.withValues(alpha: 0.6),
                     ),
                   ),
                   const SizedBox(height: 2),
@@ -94,6 +101,12 @@ class TransactionItem extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
+                if (onEdit != null)
+                  GestureDetector(
+                    onTap: onEdit,
+                    child: Icon(Icons.edit_outlined,
+                        size: 14, color: RastroColors.muted.withValues(alpha: 0.8)),
+                  ),
                 FmtValue(
                   amount:        tx.amount,
                   size:          15,
@@ -102,7 +115,7 @@ class TransactionItem extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  essential ? 'Essencial' : 'Cortável',
+                  essential ? 'Essencial' : 'Não-essencial',
                   style: GoogleFonts.dmSans(
                     fontSize: 10, fontWeight: FontWeight.w600,
                     color: essential ? RastroColors.muted : RastroColors.danger,

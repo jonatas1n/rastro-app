@@ -60,6 +60,9 @@ class Transaction {
   }) : localId = localId ?? _uuid.v4();
 
   Transaction copyWith({
+    String?               place,
+    double?               amount,
+    DateTime?             timestamp,
     bool?                 isEssential,
     TransactionCategory?  category,
     bool?                 synced,
@@ -69,10 +72,10 @@ class Transaction {
         id:              id,
         localId:         localId,
         serverId:        serverId    ?? this.serverId,
-        place:           place,
-        amount:          amount,
+        place:           place       ?? this.place,
+        amount:          amount      ?? this.amount,
         category:        category    ?? this.category,
-        timestamp:       timestamp,
+        timestamp:       timestamp   ?? this.timestamp,
         isEssential:     isEssential ?? this.isEssential,
         rawNotification: rawNotification,
         synced:          synced      ?? this.synced,

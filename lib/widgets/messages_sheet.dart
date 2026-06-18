@@ -74,10 +74,10 @@ class _MessageTile extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: msg.opened ? RastroColors.card : RastroColors.accent.withOpacity(0.06),
+          color: msg.opened ? RastroColors.card : RastroColors.accent.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: msg.opened ? RastroColors.border : RastroColors.accent.withOpacity(0.3),
+            color: msg.opened ? RastroColors.border : RastroColors.accent.withValues(alpha: 0.3),
           ),
         ),
         child: Row(

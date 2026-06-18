@@ -32,7 +32,7 @@ class FmtValue extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize:   size * 0.36,
             fontWeight: FontWeight.w500,
-            color:      color.withOpacity(0.5),
+            color:      color.withValues(alpha: 0.5),
             decoration: strikethrough ? TextDecoration.lineThrough : null,
             decorationColor: RastroColors.danger,
           ),
@@ -53,7 +53,7 @@ class FmtValue extends StatelessWidget {
           style: GoogleFonts.dmSans(
             fontSize:   size * 0.52,
             fontWeight: FontWeight.w500,
-            color:      color.withOpacity(0.6),
+            color:      color.withValues(alpha: 0.6),
             decoration: strikethrough ? TextDecoration.lineThrough : null,
             decorationColor: RastroColors.danger,
           ),
@@ -148,9 +148,9 @@ class CategoryChip extends StatelessWidget {
     return Container(
       width: 36, height: 36,
       decoration: BoxDecoration(
-        color:        catColor.withOpacity(0.12),
+        color:        catColor.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: catColor.withOpacity(0.25), width: 1),
+        border: Border.all(color: catColor.withValues(alpha: 0.25), width: 1),
       ),
       child: Center(child: Text(category.emoji, style: const TextStyle(fontSize: 17))),
     );

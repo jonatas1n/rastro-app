@@ -112,6 +112,27 @@ class SyncQueue {
       await _db.addPendingUpdate(tx.localId, {'category': tx.category.name});
     }
   }
+
+  Future<void> pushTransactionEdit(Transaction tx) async {
+    try {
+      await _api.updateTransaction(
+        tx.localId,
+        isEssential: tx.isEssential,
+        category: tx.category.name,
+        place: tx.place,
+        amount: tx.amount,
+        timestamp: tx.timestamp,
+      );
+    } catch (_) {
+      await _db.addPendingUpdate(tx.localId, {
+        'is_essential': tx.isEssential,
+        'category': tx.category.name,
+        'place': tx.place,
+        'amount': tx.amount,
+        'timestamp': tx.timestamp.toUtc().toIso8601String(),
+      });
+    }
+  }
 }
 
 // ── Auth state persistence ────────────────────────────────────────────────────

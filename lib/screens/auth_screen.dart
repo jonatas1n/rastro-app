@@ -85,7 +85,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: RastroColors.accent,
                     foregroundColor: Colors.black,
-                    disabledBackgroundColor: RastroColors.accent.withOpacity(0.4),
+                    disabledBackgroundColor: RastroColors.accent.withValues(alpha: 0.4),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),

@@ -9,6 +9,7 @@ import '../providers/transaction_provider.dart';
 import '../theme/colors.dart';
 import '../widgets/shared.dart';
 import '../widgets/transaction_item.dart';
+import '../widgets/edit_transaction_sheet.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -94,8 +95,11 @@ class _TopBar extends StatelessWidget {
       color: RastroColors.base,
       padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                 color: RastroColors.sub, size: 18),
             onPressed: () => Navigator.pop(context),
@@ -103,6 +107,7 @@ class _TopBar extends StatelessWidget {
           Expanded(
             child: Container(
               height: 40,
+              alignment: Alignment.center,
               decoration: BoxDecoration(
                 color:        RastroColors.surface,
                 borderRadius: BorderRadius.circular(10),
@@ -111,19 +116,28 @@ class _TopBar extends StatelessWidget {
               child: TextField(
                 controller:  searchCtrl,
                 onChanged:   onSearch,
-                style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.text),
+                textAlignVertical: TextAlignVertical.center,
+                style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.text, height: 1.2),
                 decoration: InputDecoration(
+                  isDense: true,
                   hintText:       'Buscar estabelecimento...',
-                  hintStyle:      GoogleFonts.dmSans(fontSize: 13, color: RastroColors.muted),
-                  prefixIcon:     const Icon(Icons.search_rounded, color: RastroColors.muted, size: 18),
+                  hintStyle:      GoogleFonts.dmSans(fontSize: 13, color: RastroColors.muted, height: 1.2),
+                  prefixIcon: const Icon(Icons.search_rounded, color: RastroColors.muted, size: 18),
+                  prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   suffixIcon: searchCtrl.text.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () { searchCtrl.clear(); onSearch(''); },
-                          child: const Icon(Icons.close_rounded, color: RastroColors.muted, size: 16),
+                      ? IconButton(
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 36, minHeight: 40),
+                          icon: const Icon(Icons.close_rounded, color: RastroColors.muted, size: 16),
+                          onPressed: () {
+                            searchCtrl.clear();
+                            onSearch('');
+                          },
                         )
                       : null,
-                  border:      InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  suffixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 40),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.only(right: 8),
                 ),
               ),
             ),
@@ -135,17 +149,17 @@ class _TopBar extends StatelessWidget {
               width: 40, height: 40,
               decoration: BoxDecoration(
                 color: showFilters
-                    ? RastroColors.accent.withOpacity(0.15)
+                    ? RastroColors.accent.withValues(alpha: 0.15)
                     : RastroColors.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: showFilters ? RastroColors.accent.withOpacity(0.4) : RastroColors.border,
+                  color: showFilters ? RastroColors.accent.withValues(alpha: 0.4) : RastroColors.border,
                 ),
               ),
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Icon(Icons.tune_rounded,
+                  Icon(Icons.filter_list_rounded,
                       color: showFilters ? RastroColors.accent : RastroColors.sub, size: 18),
                   if (!prov.filter.isEmpty)
                     Positioned(
@@ -208,7 +222,7 @@ class _FilterRow extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               _ToggleChip(
-                label:    'Cortável',
+                label:    'Não-essencial',
                 selected: filter.essentialOnly == false,
                 onTap:    () => prov.setEssentialOnly(filter.essentialOnly == false ? null : false),
                 color:    RastroColors.danger,
@@ -250,10 +264,10 @@ class _CatChip extends StatelessWidget {
         margin: const EdgeInsets.only(right: 6),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? RastroColors.accent.withOpacity(0.15) : RastroColors.surface,
+          color: selected ? RastroColors.accent.withValues(alpha: 0.15) : RastroColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? RastroColors.accent.withOpacity(0.5) : RastroColors.border,
+            color: selected ? RastroColors.accent.withValues(alpha: 0.5) : RastroColors.border,
           ),
         ),
         child: Text(label,
@@ -286,9 +300,9 @@ class _ToggleChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.12) : RastroColors.surface,
+          color: selected ? color.withValues(alpha: 0.12) : RastroColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? color.withOpacity(0.4) : RastroColors.border),
+          border: Border.all(color: selected ? color.withValues(alpha: 0.4) : RastroColors.border),
         ),
         child: Text(label,
             style: GoogleFonts.dmSans(
@@ -338,9 +352,9 @@ class _DateRangeButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: hasRange ? RastroColors.info.withOpacity(0.12) : RastroColors.surface,
+          color: hasRange ? RastroColors.info.withValues(alpha: 0.12) : RastroColors.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: hasRange ? RastroColors.info.withOpacity(0.4) : RastroColors.border),
+          border: Border.all(color: hasRange ? RastroColors.info.withValues(alpha: 0.4) : RastroColors.border),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -503,6 +517,7 @@ class _ResultsList extends StatelessWidget {
               child: TransactionItem(
                 tx:       tx,
                 onToggle: () => txProv.toggleEssential(tx),
+                onEdit:   () => showEditTransactionSheet(context, tx),
               ),
             )),
           ],

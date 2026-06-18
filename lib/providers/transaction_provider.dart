@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../models/transaction.dart';
+import '../services/spending_summary_notification.dart';
 import '../services/database_service.dart';
 import '../services/sync_queue.dart';
 import '../services/api_client.dart';
@@ -88,6 +89,8 @@ class TransactionProvider extends ChangeNotifier {
     _loading   = false;
     notifyListeners();
 
+    await SpendingSummaryNotification.refresh();
+
     // Tenta sincronizar pendentes em background
     _sync.triggerSync();
   }
@@ -126,6 +129,33 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> remove(String localId) async {
     await _db.delete(localId);
     await load();
+  }
+
+  Future<void> editTransaction(
+    Transaction tx, {
+    required String place,
+    required double amount,
+    required TransactionCategory category,
+    required bool isEssential,
+    required DateTime timestamp,
+  }) async {
+    await _db.updateTransaction(
+      tx.localId,
+      place: place,
+      amount: amount,
+      category: category,
+      isEssential: isEssential,
+      timestampMs: timestamp.millisecondsSinceEpoch,
+    );
+    final updated = tx.copyWith(
+      place: place,
+      amount: amount,
+      category: category,
+      isEssential: isEssential,
+      timestamp: timestamp,
+    );
+    await load();
+    _sync.pushTransactionEdit(updated);
   }
 
   @override

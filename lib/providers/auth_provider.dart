@@ -42,8 +42,9 @@ class AuthProvider extends ChangeNotifier {
       _error = e.message;
       notifyListeners();
       return false;
-    } catch (e) {
-      _error = 'Falha de conexão com a API';
+    } catch (e, st) {
+      debugPrint('Auth register failed: $e\n$st');
+      _error = 'Falha de conexão com a API (${ApiClient.baseUrl})';
       notifyListeners();
       return false;
     }
@@ -62,8 +63,9 @@ class AuthProvider extends ChangeNotifier {
       _error = e.message;
       notifyListeners();
       return false;
-    } catch (e) {
-      _error = 'Falha de conexão com a API';
+    } catch (e, st) {
+      debugPrint('Auth login failed: $e\n$st');
+      _error = 'Falha de conexão com a API (${ApiClient.baseUrl})';
       notifyListeners();
       return false;
     }

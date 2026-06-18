@@ -6,11 +6,12 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
+import 'providers/finance_profile_provider.dart';
 import 'providers/messages_provider.dart';
-import 'providers/history_provider.dart';
 import 'services/api_client.dart';
 import 'services/notification_service.dart';
 import 'services/local_notification_service.dart';
+import 'services/spending_summary_notification.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/permission_screen.dart';
@@ -34,6 +35,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(api: api)..init()),
         ChangeNotifierProvider(create: (_) => TransactionProvider(api: api)),
+        ChangeNotifierProvider(create: (_) => FinanceProfileProvider()..load()),
         ChangeNotifierProvider(create: (_) => MessagesProvider(api: api)),
       ],
       child: const RastroApp(),
@@ -66,7 +68,10 @@ class _RastroAppState extends State<RastroApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) _checkPermission();
+    if (state == AppLifecycleState.resumed) {
+      _checkPermission();
+      SpendingSummaryNotification.refresh();
+    }
   }
 
   Future<void> _checkPermission() async {
@@ -123,6 +128,34 @@ class _RootGate extends StatelessWidget {
     }
 
     // Tudo pronto
-    return const HomeScreen();
+    return const _HomeWithSpendingNotification();
   }
+}
+
+class _HomeWithSpendingNotification extends StatefulWidget {
+  const _HomeWithSpendingNotification();
+
+  @override
+  State<_HomeWithSpendingNotification> createState() =>
+      _HomeWithSpendingNotificationState();
+}
+
+class _HomeWithSpendingNotificationState
+    extends State<_HomeWithSpendingNotification> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SpendingSummaryNotification.startIfEnabled();
+    });
+  }
+
+  @override
+  void dispose() {
+    SpendingSummaryNotification.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => const HomeScreen();
 }

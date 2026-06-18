@@ -4,16 +4,6 @@ import '../models/transaction.dart';
 import '../theme/colors.dart';
 import 'shared.dart';
 
-Color _catColor(TransactionCategory cat) => switch (cat) {
-  TransactionCategory.alimentacao => RastroColors.catAlimentacao,
-  TransactionCategory.transporte  => RastroColors.catTransporte,
-  TransactionCategory.saude       => RastroColors.catSaude,
-  TransactionCategory.compras     => RastroColors.catCompras,
-  TransactionCategory.lazer       => RastroColors.catLazer,
-  TransactionCategory.mercado     => RastroColors.catMercado,
-  TransactionCategory.outros      => RastroColors.sub,
-};
-
 class MonthlyProgressCard extends StatelessWidget {
   /// Map de categoria → valor gasto este mês
   final Map<TransactionCategory, double> currentMonth;
@@ -94,7 +84,7 @@ class MonthlyProgressCard extends StatelessWidget {
                         widthFactor: prevFrac.clamp(0.0, 1.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: RastroColors.muted.withOpacity(0.25),
+                            color: RastroColors.muted.withValues(alpha: 0.25),
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
@@ -106,7 +96,7 @@ class MonthlyProgressCard extends StatelessWidget {
                         widthFactor: currFrac.clamp(0.0, 1.0),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: barColor.withOpacity(0.85),
+                            color: barColor.withValues(alpha: 0.85),
                             borderRadius: BorderRadius.circular(5),
                           ),
                         ),
@@ -147,7 +137,7 @@ class _LegendDot extends StatelessWidget {
         Container(
           width: 12, height: 4,
           decoration: BoxDecoration(
-            color: color.withOpacity(opacity),
+            color: color.withValues(alpha: opacity),
             borderRadius: BorderRadius.circular(2),
           ),
         ),
