@@ -17,6 +17,7 @@ import '../widgets/edit_transaction_sheet.dart';
 import '../widgets/add_transaction_sheet.dart';
 import 'finance_settings_screen.dart';
 import 'history_screen.dart';
+import 'notification_debug_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -67,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(14, 20, 14, 88),
                   children: [
-                    _Header(prov: prov),
+                    const _Header(),
                     const SizedBox(height: 12),
                     _TotalCard(prov: prov),
                     const SizedBox(height: 10),
@@ -101,35 +102,33 @@ class _HomeScreenState extends State<HomeScreen> {
 // ── Header ──────────────────────────────────────────────────────────────────
 
 class _Header extends StatelessWidget {
-  final TransactionProvider prov;
-  const _Header({required this.prov});
+  const _Header();
 
   @override
   Widget build(BuildContext context) {
-    final avgWeek  = prov.weekAvg;
-    final total    = prov.totalToday;
-    final diffPct  = avgWeek > 0 ? ((total - avgWeek) / avgWeek * 100).round() : 0;
-    final isUp     = diffPct > 0;
-    final isDown   = diffPct < 0;
-    final diffColor = isUp
-        ? RastroColors.danger
-        : isDown
-            ? RastroColors.safe
-            : RastroColors.muted;
-    final weekday  = DateFormat('EEEE · d MMM', 'pt_BR').format(DateTime.now());
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(weekday,
-              style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w500,
-                  color: RastroColors.muted)),
-          const SizedBox(height: 3),
-          Text('Rastro',
-              style: GoogleFonts.dmSans(fontSize: 22, fontWeight: FontWeight.w800,
-                  color: RastroColors.text, letterSpacing: -0.5)),
+          ShaderMask(
+            blendMode: BlendMode.srcIn,
+            shaderCallback: (bounds) => const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [RastroColors.safe, Colors.white],
+            ).createShader(bounds),
+            child: Text(
+              'rastro',
+              style: GoogleFonts.dmSans(
+                fontSize: 30,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+                letterSpacing: -0.8,
+                height: 1,
+              ),
+            ),
+          ),
         ]),
         Row(
           children: [
@@ -165,41 +164,27 @@ class _Header extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            const MessagesBadge(),
-            if (avgWeek > 0) ...[
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 4),
-                decoration: BoxDecoration(
-                  color:        diffColor.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: diffColor.withValues(alpha: 0.28)),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      isUp
-                          ? Icons.arrow_upward_rounded
-                          : isDown
-                              ? Icons.arrow_downward_rounded
-                              : Icons.remove_rounded,
-                      size: 14,
-                      color: diffColor,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '${diffPct.abs()}%',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: diffColor,
-                      ),
-                    ),
-                  ],
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationDebugScreen(),
                 ),
               ),
-            ],
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: RastroColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: RastroColors.border),
+                ),
+                child: const Icon(Icons.bug_report_outlined,
+                    color: RastroColors.sub, size: 18),
+              ),
+            ),
+            const SizedBox(width: 8),
+            const MessagesBadge(),
           ],
         ),
       ],
@@ -219,6 +204,9 @@ class _TotalCard extends StatelessWidget {
     final essential   = prov.essentialToday;
     final nonEss      = prov.nonEssentialToday;
     final nonEssPct   = total > 0 ? nonEss / total : 0.0;
+    final avgWeek     = prov.weekAvg;
+    final diffPct     = avgWeek > 0 ? ((total - avgWeek) / avgWeek * 100).round() : 0;
+    final showDelta   = avgWeek > 0;
 
     return RastroCard(
       padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
@@ -246,7 +234,15 @@ class _TotalCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          FmtValue(amount: total, size: 48),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Expanded(
+                child: FmtValue(amount: total, size: 48),
+              ),
+              if (showDelta) _DailySpendDeltaBadge(diffPct: diffPct),
+            ],
+          ),
           if (nonEss > 0) ...[
             const SizedBox(height: 14),
             Row(
@@ -292,6 +288,54 @@ class _TotalCard extends StatelessWidget {
     if (count == 0) return 'Nenhum gasto hoje';
     if (count == 1) return '1 gasto hoje';
     return '$count gastos hoje';
+  }
+}
+
+class _DailySpendDeltaBadge extends StatelessWidget {
+  final int diffPct;
+  const _DailySpendDeltaBadge({required this.diffPct});
+
+  @override
+  Widget build(BuildContext context) {
+    final isUp = diffPct > 0;
+    final isDown = diffPct < 0;
+    final color = isUp
+        ? RastroColors.danger
+        : isDown
+            ? RastroColors.safe
+            : RastroColors.muted;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            isUp
+                ? Icons.arrow_upward_rounded
+                : isDown
+                    ? Icons.arrow_downward_rounded
+                    : Icons.remove_rounded,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 2),
+          Text(
+            '${diffPct.abs()}%',
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

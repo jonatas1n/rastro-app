@@ -11,6 +11,7 @@ class LocalNotificationService {
   static bool _tzReady = false;
 
   static const persistentSpendingSummaryId = 1001;
+  static const debugTestNotificationId = 9998;
 
   static Future<void> init() async {
     if (!_tzReady) {
@@ -70,6 +71,29 @@ class LocalNotificationService {
 
   static Future<void> cancelPersistentSpendingSummary() async {
     await _plugin.cancel(persistentSpendingSummaryId);
+  }
+
+  /// Notificação visível na barra para testar o listener (tela de debug).
+  static Future<void> showDebugTestNotification({
+    required String title,
+    required String body,
+  }) async {
+    await _plugin.show(
+      debugTestNotificationId,
+      '[Debug] $title',
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          'debug_test',
+          'Testes de debug',
+          channelDescription:
+              'Notificações geradas pela tela de debug do Rastro.',
+          importance: Importance.defaultImportance,
+          priority: Priority.defaultPriority,
+          icon: '@mipmap/ic_launcher',
+        ),
+      ),
+    );
   }
 
   /// Notificação imediata ao detectar um gasto

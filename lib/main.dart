@@ -15,6 +15,7 @@ import 'models/transaction.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/permission_screen.dart';
+import 'services/notification_debug_log.dart';
 import 'theme/colors.dart';
 
 void main() async {
@@ -37,6 +38,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => TransactionProvider(api: api)),
         ChangeNotifierProvider(create: (_) => FinanceProfileProvider()..load()),
         ChangeNotifierProvider(create: (_) => MessagesProvider(api: api)),
+        ChangeNotifierProvider.value(value: NotificationDebugLog.instance),
       ],
       child: const RastroApp(),
     ),
@@ -70,6 +72,7 @@ class _RastroAppState extends State<RastroApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _checkPermission();
+      NotificationService.reconnect();
       SpendingSummaryNotification.refresh();
     }
   }
@@ -126,14 +129,53 @@ class _RootGate extends StatelessWidget {
       return const AuthScreen();
     }
 
-    // Autenticado mas sem permissão de notificações
-    if (!hasNotifPermission) {
-      return PermissionScreen(onGranted: onPermissionCheck);
-    }
-
-    // Tudo pronto
-    return const _HomeWithSpendingNotification();
+    // Autenticado — handler de gastos ativo em qualquer tela pós-login
+    return _AuthenticatedNotificationScope(
+      child: !hasNotifPermission
+          ? PermissionScreen(onGranted: onPermissionCheck)
+          : const _HomeWithSpendingNotification(),
+    );
   }
+}
+
+class _AuthenticatedNotificationScope extends StatefulWidget {
+  final Widget child;
+  const _AuthenticatedNotificationScope({required this.child});
+
+  @override
+  State<_AuthenticatedNotificationScope> createState() =>
+      _AuthenticatedNotificationScopeState();
+}
+
+class _AuthenticatedNotificationScopeState
+    extends State<_AuthenticatedNotificationScope> {
+  @override
+  void initState() {
+    super.initState();
+    NotificationService.setTransactionHandler(_onBankNotification);
+  }
+
+  @override
+  void dispose() {
+    NotificationService.setTransactionHandler(null);
+    super.dispose();
+  }
+
+  Future<void> _onBankNotification(Transaction tx) async {
+    if (!mounted) return;
+    final txProv = context.read<TransactionProvider>();
+    final finProv = context.read<FinanceProfileProvider>();
+    await txProv.addTransaction(tx);
+    if (!mounted) return;
+    await finProv.refreshSpending();
+    if (!mounted) return;
+    final raw = tx.rawNotification ?? '';
+    if (raw.contains(' DEBUG')) return;
+    await LocalNotificationService.showTransactionAlert(tx);
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 class _HomeWithSpendingNotification extends StatefulWidget {
@@ -149,7 +191,6 @@ class _HomeWithSpendingNotificationState
   @override
   void initState() {
     super.initState();
-    NotificationService.setTransactionHandler(_onBankNotification);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       SpendingSummaryNotification.startIfEnabled();
     });
@@ -157,18 +198,8 @@ class _HomeWithSpendingNotificationState
 
   @override
   void dispose() {
-    NotificationService.setTransactionHandler(null);
     SpendingSummaryNotification.stop();
     super.dispose();
-  }
-
-  Future<void> _onBankNotification(Transaction tx) async {
-    if (!mounted) return;
-    final txProv = context.read<TransactionProvider>();
-    final finProv = context.read<FinanceProfileProvider>();
-    await txProv.addTransaction(tx);
-    await finProv.refreshSpending();
-    await LocalNotificationService.showTransactionAlert(tx);
   }
 
   @override

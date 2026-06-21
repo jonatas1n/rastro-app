@@ -38,7 +38,7 @@ class PermissionScreen extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () async {
                     await NotificationService.requestPermission();
-                    // Verifica novamente após retornar das configurações
+                    await NotificationService.init();
                     onGranted();
                   },
                   style: ElevatedButton.styleFrom(

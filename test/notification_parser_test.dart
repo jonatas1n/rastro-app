@@ -1,22 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:rastro/models/finance_profile.dart';
+import 'package:rastro/models/transaction.dart';
 import 'package:rastro/services/bank_notification_sources.dart';
 import 'package:rastro/services/notification_parser.dart';
 
 void main() {
   group('NotificationParser', () {
-    test('ignora pix recebido', () {
-      expect(
-        NotificationParser.parse(
-          'Nubank',
-          'Pix recebido de João R\$ 50,00',
-          packageName: 'com.nu.production',
-        ),
-        isNull,
-      );
-    });
-
-    test('detecta compra Nubank pelo pacote', () {
+    test('extrai valor de notificação bancária', () {
       final parsed = NotificationParser.parse(
         'Nubank',
         'Compra aprovada de R\$ 47,90 em IFOOD',
@@ -24,8 +14,20 @@ void main() {
       );
       expect(parsed, isNotNull);
       expect(parsed!.amount, closeTo(47.90, 0.001));
-      expect(parsed.place.toLowerCase(), contains('ifood'));
+      expect(parsed.place, 'Nubank');
       expect(parsed.bankLabel, 'Nubank');
+      expect(parsed.category, TransactionCategory.outros);
+    });
+
+    test('ignora texto sem valor monetário', () {
+      expect(
+        NotificationParser.parse(
+          'Nubank',
+          'Seu cartão chegou',
+          packageName: 'com.nu.production',
+        ),
+        isNull,
+      );
     });
 
     test('detecta banco pelo título sem pacote', () {

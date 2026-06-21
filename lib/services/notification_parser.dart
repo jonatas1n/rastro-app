@@ -1,5 +1,6 @@
 import '../models/transaction.dart';
 import 'bank_notification_sources.dart';
+import 'notification_debug_log.dart';
 
 class ParsedNotification {
   final double amount;
@@ -15,50 +16,98 @@ class ParsedNotification {
   });
 }
 
-/// Parser de notificações — só processa origens do catálogo [bankNotificationSources].
+class NotificationAnalyzeResult {
+  final BankSourceMatch? sourceMatch;
+  final String? amountRaw;
+  final double? amount;
+  final ParsedNotification? parsed;
+
+  const NotificationAnalyzeResult({
+    this.sourceMatch,
+    this.amountRaw,
+    this.amount,
+    this.parsed,
+  });
+
+  List<NotificationDebugCheck> buildChecks({
+    required String title,
+    required String body,
+    required String? packageName,
+    required bool handlerRegistered,
+    bool? handlerSucceeded,
+    String? handlerError,
+  }) {
+    final bank = sourceMatch;
+    final hasContent = title.trim().isNotEmpty || body.trim().isNotEmpty;
+    final hasPackage = packageName != null && packageName.isNotEmpty;
+
+    return [
+      const NotificationDebugCheck(
+        id: 'received',
+        label: 'Notificação recebida',
+        ok: true,
+      ),
+      NotificationDebugCheck(
+        id: 'content',
+        label: 'Título ou texto presente',
+        ok: hasContent,
+        detail: hasContent ? null : 'Vazio',
+      ),
+      NotificationDebugCheck(
+        id: 'package',
+        label: 'Pacote Android informado',
+        ok: hasPackage,
+        detail: packageName ?? '(null)',
+      ),
+      NotificationDebugCheck(
+        id: 'bank',
+        label: 'Banco no catálogo',
+        ok: bank != null,
+        detail: bank != null
+            ? '${bank.source.label} (${bank.kind.name})'
+            : 'Pacote/título não bate com banks.md',
+      ),
+      NotificationDebugCheck(
+        id: 'regex',
+        label: 'Valor bate com regex R\$',
+        ok: amountRaw != null,
+        detail: amountRaw ?? 'Nenhum padrão R\$ / 1.234,56 encontrado',
+      ),
+      NotificationDebugCheck(
+        id: 'amount',
+        label: 'Valor numérico válido (> 0)',
+        ok: amount != null && amount! > 0,
+        detail: amount?.toStringAsFixed(2),
+      ),
+      NotificationDebugCheck(
+        id: 'parsed',
+        label: 'Parser montou gasto',
+        ok: parsed != null,
+      ),
+      NotificationDebugCheck(
+        id: 'handler',
+        label: 'App pronto para salvar (handler)',
+        ok: handlerRegistered,
+        detail: handlerRegistered ? null : 'Faça login e abra a home',
+      ),
+      NotificationDebugCheck(
+        id: 'saved',
+        label: 'Salvo no SQLite + lista',
+        ok: handlerSucceeded == true,
+        detail: parsed == null
+            ? 'Parser não concluiu'
+            : handlerError,
+      ),
+    ];
+  }
+}
+
+/// Notificações de bancos do catálogo: extrai somente o valor (R$).
 class NotificationParser {
-  static final _amountRe = RegExp(
+  static final amountPattern = RegExp(
     r'R\$\s*(\d{1,3}(?:\.\d{3})*(?:,\d{2})?)'
     r'|R\$\s*(\d+(?:,\d{2})?)'
     r'|(\d{1,3}(?:\.\d{3})*,\d{2})',
-    caseSensitive: false,
-  );
-
-  static final _placePrep = RegExp(
-    r'\b(?:em|no|na|para|de|@)\s+([A-Za-zÀ-ú0-9 &.\-]{2,45})',
-    caseSensitive: false,
-  );
-
-  static final _placeColon = RegExp(
-    r'(?:compra|pagamento|d[eé]bito|transa[cç][aã]o)[^:]*:\s*([A-Za-zÀ-ú0-9 &.\-]{2,45})',
-    caseSensitive: false,
-  );
-
-  static final _categoryMap = <RegExp, TransactionCategory>{
-    RegExp(r'ifood|rappi|uber.?eat|mcdonalds|burger|subway|pizza|padaria|lanchonete|restaurante|cafe|açaí', caseSensitive: false):
-        TransactionCategory.alimentacao,
-    RegExp(r'pão de açúcar|extra|carrefour|atacadão|assaí|mercado|hortifruti|supermercado|sacolão', caseSensitive: false):
-        TransactionCategory.mercado,
-    RegExp(r'\b99\b|uber|cabify|taxi|posto|shell|ipiranga|petrobras|combustível|gasolina|estacionamento|metrô', caseSensitive: false):
-        TransactionCategory.transporte,
-    RegExp(r'farmácia|drogaria|droga|panvel|ultrafarma|hospital|clínica|laboratorio|dentista|médico', caseSensitive: false):
-        TransactionCategory.saude,
-    RegExp(r'amazon|shopee|americanas|magazineluiza|magalu|renner|riachuelo|shopping|mercado.?livre', caseSensitive: false):
-        TransactionCategory.compras,
-    RegExp(r'netflix|spotify|amazon.?prime|hbo|disney|cinema|steam|playstation|xbox|bar|balada', caseSensitive: false):
-        TransactionCategory.lazer,
-  };
-
-  static final _ignore = RegExp(
-    r'pix\s+recebido|cr[eé]dito\s+em|transfer[eê]ncia\s+recebida|saldo\s+dispon[ií]vel|'
-    r'limite\s+dispon[ií]vel|extrato|fatura\s+fechada|pagamento\s+recebido|'
-    r'entrada\s+de\s+pix|voc[eê]\s+recebeu',
-    caseSensitive: false,
-  );
-
-  static final _expenseRe = RegExp(
-    r'compra|pagamento|d[eé]bito|debitado|gasto|aprovad|realizad|pix\s+enviado|'
-    r'transa[cç][aã]o\s+aprovada|cart[aã]o\s+final|sa[ií]da\s+de\s+pix|compras\s+no',
     caseSensitive: false,
   );
 
@@ -75,77 +124,56 @@ class NotificationParser {
         null;
   }
 
-  static ParsedNotification? parse(
+  static NotificationAnalyzeResult analyze(
     String title,
     String body, {
     String? packageName,
   }) {
-    final text = '$title $body'.replaceAll('\n', ' ');
-    if (_ignore.hasMatch(text)) return null;
-
     final sourceMatch = matchBankNotificationSource(
       packageName: packageName,
       title: title,
       body: body,
     );
-    if (sourceMatch == null) return null;
-
-    if (_needsExpenseSignal(sourceMatch.kind) && !_expenseRe.hasMatch(text)) {
-      return null;
-    }
-
+    final text = '$title $body'.replaceAll('\n', ' ');
+    final amountRaw = _amountRaw(text);
     final amount = _parseAmount(text);
-    if (amount == null || amount <= 0) return null;
-
-    final bankLabel = sourceMatch.source.label;
-    final placeMatch = _placeColon.firstMatch(text) ?? _placePrep.firstMatch(text);
-    final rawPlace = placeMatch?.group(1)?.trim() ??
-        bankLabel ??
-        _extractAppName(title);
-    final place = _cleanPlace(rawPlace);
-    final category = _detectCategory(text);
-
-    return ParsedNotification(
+    ParsedNotification? parsed;
+    if (sourceMatch != null && amount != null && amount > 0) {
+      final bankLabel = sourceMatch.source.label;
+      parsed = ParsedNotification(
+        amount: amount,
+        place: bankLabel,
+        category: TransactionCategory.outros,
+        bankLabel: bankLabel,
+      );
+    }
+    return NotificationAnalyzeResult(
+      sourceMatch: sourceMatch,
+      amountRaw: amountRaw,
       amount: amount,
-      place: place,
-      category: category,
-      bankLabel: bankLabel,
+      parsed: parsed,
     );
   }
 
-  static bool _needsExpenseSignal(BankSourceMatchKind kind) {
-    return kind == BankSourceMatchKind.notificationTitle ||
-        kind == BankSourceMatchKind.caixaSms;
+  static ParsedNotification? parse(
+    String title,
+    String body, {
+    String? packageName,
+  }) {
+    return analyze(title, body, packageName: packageName).parsed;
+  }
+
+  static String? _amountRaw(String text) {
+    final match = amountPattern.firstMatch(text);
+    if (match == null) return null;
+    return match.group(0);
   }
 
   static double? _parseAmount(String text) {
-    final match = _amountRe.firstMatch(text);
+    final match = amountPattern.firstMatch(text);
     if (match == null) return null;
     final raw = (match.group(1) ?? match.group(2) ?? match.group(3))!;
     final normalized = raw.replaceAll('.', '').replaceAll(',', '.');
     return double.tryParse(normalized);
-  }
-
-  static String _extractAppName(String title) {
-    final clean = title.split(RegExp(r'[-:|]')).first.trim();
-    return clean.isEmpty ? 'Desconhecido' : clean;
-  }
-
-  static String _cleanPlace(String raw) {
-    return raw
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .replaceAll(RegExp(r'[*#@]'), '')
-        .trim()
-        .split(' ')
-        .map((w) =>
-            w.isEmpty ? '' : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}')
-        .join(' ');
-  }
-
-  static TransactionCategory _detectCategory(String text) {
-    for (final entry in _categoryMap.entries) {
-      if (entry.key.hasMatch(text)) return entry.value;
-    }
-    return TransactionCategory.outros;
   }
 }
