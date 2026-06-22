@@ -62,6 +62,12 @@ class NotificationDebugLog extends ChangeNotifier {
     notifyListeners();
   }
 
+  void removeByIds(Set<String> ids) {
+    if (ids.isEmpty) return;
+    _entries.removeWhere((e) => ids.contains(e.id));
+    notifyListeners();
+  }
+
   /// Linha de status (ponte, permissão, serviço).
   void addSystem({required String title, required String body}) {
     add(

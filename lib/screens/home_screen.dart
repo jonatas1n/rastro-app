@@ -9,15 +9,14 @@ import '../theme/colors.dart';
 import '../models/transaction.dart';
 import '../widgets/shared.dart';
 import '../widgets/savings_card.dart';
-import '../widgets/transaction_item.dart';
 import "../widgets/monthly_progress.dart";
 import '../widgets/budget_progress_card.dart';
 import "../widgets/messages_sheet.dart";
-import '../widgets/edit_transaction_sheet.dart';
 import '../widgets/add_transaction_sheet.dart';
 import 'finance_settings_screen.dart';
-import 'history_screen.dart';
+import 'notification_history_screen.dart';
 import 'notification_debug_screen.dart';
+import 'today_expenses_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -82,21 +81,29 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 10),
                     _SummaryCards(prov: prov),
-                    const SizedBox(height: 16),
-                    SectionLabel(title: 'Gastos de hoje', right: 'Toque para marcar'),
-                    _TodayTransactionsCard(prov: prov),
-                    const SizedBox(height: 16),
-                    SectionLabel(
-                      title: 'Progressão do mês',
-                      right: DateFormat('MMMM', 'pt_BR').format(DateTime.now()),
-                    ),
-                    _MonthlySection(prov: prov),
+                    if (_hasMonthlyProgress(prov)) ...[
+                      const SizedBox(height: 16),
+                      SectionLabel(
+                        title: 'Progressão do mês',
+                        right: DateFormat('MMMM', 'pt_BR')
+                            .format(DateTime.now()),
+                      ),
+                      _MonthlySection(prov: prov),
+                    ],
                   ],
                 ),
               ),
       ),
     );
   }
+}
+
+bool _hasMonthlyProgress(TransactionProvider prov) {
+  for (final cat in TransactionCategory.values) {
+    if (cat == TransactionCategory.outros) continue;
+    if ((prov.monthByCategory[cat] ?? 0) > 0) return true;
+  }
+  return false;
 }
 
 // ── Header ──────────────────────────────────────────────────────────────────
@@ -151,16 +158,22 @@ class _Header extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             GestureDetector(
-              onTap: () => Navigator.push(context,
-                  MaterialPageRoute(builder: (_) => const HistoryScreen())),
-              child: Container(
-                width: 36, height: 36,
-                decoration: BoxDecoration(
-                  color:        RastroColors.surface,
-                  borderRadius: BorderRadius.circular(10),
-                  border:       Border.all(color: RastroColors.border),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NotificationHistoryScreen(),
                 ),
-                child: const Icon(Icons.history_rounded, color: RastroColors.sub, size: 18),
+              ),
+              child: Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: RastroColors.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: RastroColors.border),
+                ),
+                child: const Icon(Icons.notifications_outlined,
+                    color: RastroColors.sub, size: 18),
               ),
             ),
             const SizedBox(width: 8),
@@ -279,6 +292,41 @@ class _TotalCard extends StatelessWidget {
               ),
             ),
           ],
+          const SizedBox(height: 14),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const TodayExpensesScreen(),
+                ),
+              ),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Ver gastos de hoje',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: RastroColors.accent,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 16,
+                      color: RastroColors.accent,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -387,100 +435,6 @@ class _SmallCard extends StatelessWidget {
         Text(sub,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
-      ]),
-    );
-  }
-}
-
-// ── Gastos de hoje (card + histórico) ────────────────────────────────────────
-
-class _TodayTransactionsCard extends StatelessWidget {
-  final TransactionProvider prov;
-  const _TodayTransactionsCard({required this.prov});
-
-  void _openHistory(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const HistoryScreen()),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final txs = prov.todayList;
-
-    return RastroCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (txs.isEmpty)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
-              child: _EmptyToday(),
-            )
-          else
-            ...txs.map((tx) => Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-                  child: TransactionItem(
-                    tx: tx,
-                    onToggle: () =>
-                        context.read<TransactionProvider>().toggleEssential(tx),
-                    onEdit: () => showEditTransactionSheet(context, tx),
-                  ),
-                )),
-          if (txs.isNotEmpty) const SizedBox(height: 6),
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => _openHistory(context),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(14)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Ver histórico completo',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: RastroColors.accent,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    const Icon(
-                      Icons.arrow_forward_rounded,
-                      size: 16,
-                      color: RastroColors.accent,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Empty state ──────────────────────────────────────────────────────────────
-
-class _EmptyToday extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24),
-      alignment: Alignment.center,
-      child: Column(children: [
-        const Text('💳', style: TextStyle(fontSize: 32)),
-        const SizedBox(height: 10),
-        Text('Nenhum gasto registrado ainda hoje',
-            style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.muted)),
-        const SizedBox(height: 4),
-        Text('Use o botão Gasto ou aguarde notificações do banco',
-            style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted)),
       ]),
     );
   }

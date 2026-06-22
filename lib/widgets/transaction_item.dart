@@ -19,12 +19,18 @@ class TransactionItem extends StatelessWidget {
   final Transaction tx;
   final VoidCallback onToggle;
   final VoidCallback? onEdit;
+  final VoidCallback? onLongPress;
+  final bool selecting;
+  final bool selected;
 
   const TransactionItem({
     super.key,
     required this.tx,
     required this.onToggle,
     this.onEdit,
+    this.onLongPress,
+    this.selecting = false,
+    this.selected = false,
   });
 
   @override
@@ -37,27 +43,47 @@ class TransactionItem extends StatelessWidget {
 
     return GestureDetector(
       onTap: onToggle,
-      onLongPress: onEdit,
+      onLongPress: selecting ? null : onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         decoration: BoxDecoration(
-          color: essential ? RastroColors.card : RastroColors.danger.withValues(alpha: 0.05),
+          color: selected
+              ? RastroColors.accent.withValues(alpha: 0.08)
+              : essential
+                  ? RastroColors.card
+                  : RastroColors.danger.withValues(alpha: 0.05),
           borderRadius: BorderRadius.circular(10),
           border: Border(
             left: BorderSide(
-              color: essential ? RastroColors.borderMd : RastroColors.danger,
+              color: selected
+                  ? RastroColors.accent
+                  : essential
+                      ? RastroColors.borderMd
+                      : RastroColors.danger,
               width: 3,
             ),
             top: BorderSide(
-              color: essential ? RastroColors.border : RastroColors.danger.withValues(alpha: 0.2),
-              width: 1.5,
+              color: selected
+                  ? RastroColors.accent.withValues(alpha: 0.4)
+                  : essential
+                      ? RastroColors.border
+                      : RastroColors.danger.withValues(alpha: 0.2),
+              width: selected ? 1.5 : 1.5,
             ),
             right: BorderSide(
-              color: essential ? RastroColors.border : RastroColors.danger.withValues(alpha: 0.2),
+              color: selected
+                  ? RastroColors.accent.withValues(alpha: 0.4)
+                  : essential
+                      ? RastroColors.border
+                      : RastroColors.danger.withValues(alpha: 0.2),
               width: 1.5,
             ),
             bottom: BorderSide(
-              color: essential ? RastroColors.border : RastroColors.danger.withValues(alpha: 0.2),
+              color: selected
+                  ? RastroColors.accent.withValues(alpha: 0.4)
+                  : essential
+                      ? RastroColors.border
+                      : RastroColors.danger.withValues(alpha: 0.2),
               width: 1.5,
             ),
           ),
@@ -65,6 +91,17 @@ class TransactionItem extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
         child: Row(
           children: [
+            if (selecting)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Icon(
+                  selected
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
+                  size: 22,
+                  color: selected ? RastroColors.accent : RastroColors.muted,
+                ),
+              ),
             // Ícone
             CategoryChip(
               category: cat,
@@ -101,7 +138,7 @@ class TransactionItem extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (onEdit != null)
+                if (onEdit != null && !selecting)
                   GestureDetector(
                     onTap: onEdit,
                     child: Icon(Icons.edit_outlined,

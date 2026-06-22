@@ -12,7 +12,10 @@ import '../widgets/transaction_item.dart';
 import '../widgets/edit_transaction_sheet.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  /// Abre já filtrado para o dia atual.
+  final bool todayOnly;
+
+  const HistoryScreen({super.key, this.todayOnly = false});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -28,8 +31,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _prov = HistoryProvider();
-    _prov.load();
     _scrollCtrl.addListener(_onScroll);
+    if (widget.todayOnly) {
+      final now = DateTime.now();
+      _prov.setDateRange(
+        DateTime(now.year, now.month, now.day),
+        DateTime(now.year, now.month, now.day, 23, 59, 59),
+      );
+    } else {
+      _prov.load();
+    }
   }
 
   @override

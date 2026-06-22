@@ -15,12 +15,14 @@ import 'models/transaction.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/permission_screen.dart';
+import 'services/notification_blocklist.dart';
 import 'services/notification_debug_log.dart';
 import 'theme/colors.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('pt_BR');
+  await NotificationBlocklist.instance.load();
   await LocalNotificationService.init();
   await NotificationService.init();
 
@@ -39,6 +41,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => FinanceProfileProvider()..load()),
         ChangeNotifierProvider(create: (_) => MessagesProvider(api: api)),
         ChangeNotifierProvider.value(value: NotificationDebugLog.instance),
+        ChangeNotifierProvider.value(value: NotificationBlocklist.instance),
       ],
       child: const RastroApp(),
     ),

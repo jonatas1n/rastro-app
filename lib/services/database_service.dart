@@ -192,6 +192,18 @@ class DatabaseService {
     await database.delete('transactions', where: 'local_id = ?', whereArgs: [localId]);
   }
 
+  Future<void> deleteMany(Iterable<String> localIds) async {
+    final ids = localIds.toList();
+    if (ids.isEmpty) return;
+    final database = await db;
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    await database.delete(
+      'transactions',
+      where: 'local_id IN ($placeholders)',
+      whereArgs: ids,
+    );
+  }
+
   // ── Sync queue ────────────────────────────────────────────────────────────
 
   Future<List<Transaction>> getPendingSync() async {

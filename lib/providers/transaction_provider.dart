@@ -131,6 +131,11 @@ class TransactionProvider extends ChangeNotifier {
     await load();
   }
 
+  Future<void> removeMany(Iterable<String> localIds) async {
+    await _db.deleteMany(localIds);
+    await load();
+  }
+
   Future<void> editTransaction(
     Transaction tx, {
     required String place,

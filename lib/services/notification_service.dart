@@ -5,6 +5,7 @@ import 'package:flutter_notification_listener/flutter_notification_listener.dart
 
 import '../models/transaction.dart';
 import 'local_notification_service.dart';
+import 'notification_blocklist.dart';
 import 'notification_debug_log.dart';
 import 'notification_parser.dart';
 
@@ -178,6 +179,9 @@ class NotificationService {
     final packageName = event.packageName;
 
     if (_isOwnAppNotification(packageName)) {
+      return;
+    }
+    if (NotificationBlocklist.instance.isBlocked(packageName)) {
       return;
     }
 
