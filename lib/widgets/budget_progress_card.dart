@@ -35,7 +35,7 @@ class BudgetProgressCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Suas metas',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                       fontWeight: FontWeight.w700, color: RastroColors.text)),
               GestureDetector(
                 onTap: () => Navigator.push(
@@ -44,7 +44,7 @@ class BudgetProgressCard extends StatelessWidget {
                       builder: (_) => const FinanceSettingsScreen()),
                 ),
                 child: Text('Editar',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: RastroColors.accent)),
@@ -54,7 +54,7 @@ class BudgetProgressCard extends StatelessWidget {
           if (p.hasIncome) ...[
             const SizedBox(height: 8),
             Text('Ciclo $periodLabel · Renda ${fmt.format(p.monthlyIncome)}',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                     fontSize: 11, color: RastroColors.muted)),
           ],
           if (p.weeklyLimitEnabled && (p.weeklySpendingLimit ?? 0) > 0) ...[
@@ -98,12 +98,12 @@ class _SetupPrompt extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Configure sua renda e metas',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w700,
                         color: RastroColors.text)),
                 const SizedBox(height: 4),
                 Text('Defina quanto ganha e limites de gasto.',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontSize: 11, color: RastroColors.muted)),
               ],
             ),
@@ -142,10 +142,10 @@ class _Bar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                     fontSize: 12, fontWeight: FontWeight.w600)),
             Text('${fmt.format(spent)} / ${fmt.format(limit)}',
-                style: GoogleFonts.dmSans(fontSize: 11, color: color)),
+                style: GoogleFonts.outfit(fontSize: 11, color: color)),
           ],
         ),
         const SizedBox(height: 6),
@@ -174,17 +174,17 @@ class _BalanceRow extends StatelessWidget {
     final fmt = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
     if (projected == null) {
       return Text('Informe sua renda para projetar o saldo.',
-          style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted));
+          style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted));
     }
     final ok = projected! >= target;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text('Saldo projetado no fim do ciclo',
-            style: GoogleFonts.dmSans(fontSize: 12, color: RastroColors.sub)),
+            style: GoogleFonts.outfit(fontSize: 12, color: RastroColors.sub)),
         Text(
           '${fmt.format(projected!)} (meta ${fmt.format(target)})',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontSize: 11,
             fontWeight: FontWeight.w700,
             color: ok ? RastroColors.safe : RastroColors.danger,

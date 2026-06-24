@@ -55,15 +55,15 @@ class MonthlyProgressCard extends StatelessWidget {
                       const SizedBox(width: 7),
                       Expanded(
                         child: Text(cat.label,
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.outfit(
                                 fontSize: 12, fontWeight: FontWeight.w500,
                                 color: RastroColors.sub)),
                       ),
                       Text('ant. ${prev.toStringAsFixed(0)}',
-                          style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+                          style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
                       const SizedBox(width: 10),
                       Text(curr.toStringAsFixed(0),
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.outfit(
                               fontSize: 13, fontWeight: FontWeight.w700,
                               color: barColor)),
                     ],
@@ -142,7 +142,7 @@ class _LegendDot extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 5),
-        Text(label, style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+        Text(label, style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
       ],
     );
   }

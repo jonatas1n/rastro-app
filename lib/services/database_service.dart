@@ -152,11 +152,66 @@ class DatabaseService {
     return (result.first['total'] as num?)?.toDouble() ?? 0;
   }
 
+  Future<double> sumBetweenCategory(
+    int startMs,
+    int endMs,
+    TransactionCategory category,
+  ) async {
+    final database = await db;
+    final result = await database.rawQuery(
+      'SELECT COALESCE(SUM(amount), 0) as total FROM transactions '
+      'WHERE timestamp >= ? AND timestamp <= ? AND category = ?',
+      [startMs, endMs, category.dbValue],
+    );
+    return (result.first['total'] as num?)?.toDouble() ?? 0;
+  }
+
   Future<int> countBetween(int startMs, int endMs) async {
     final database = await db;
     final result = await database.rawQuery(
       'SELECT COUNT(*) as c FROM transactions '
       'WHERE timestamp >= ? AND timestamp <= ?',
+      [startMs, endMs],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  /// Mediana dos valores de transação no intervalo (para compra atípica).
+  Future<double?> medianAmountBetween(
+    int startMs,
+    int endMs, {
+    String? excludeLocalId,
+  }) async {
+    final database = await db;
+    final rows = await database.rawQuery(
+      excludeLocalId == null
+          ? 'SELECT amount FROM transactions '
+              'WHERE timestamp >= ? AND timestamp <= ? ORDER BY amount ASC'
+          : 'SELECT amount FROM transactions '
+              'WHERE timestamp >= ? AND timestamp <= ? AND local_id != ? '
+              'ORDER BY amount ASC',
+      excludeLocalId == null
+          ? [startMs, endMs]
+          : [startMs, endMs, excludeLocalId],
+    );
+    if (rows.isEmpty) return null;
+    final amounts = rows
+        .map((r) => (r['amount'] as num?)?.toDouble() ?? 0)
+        .where((a) => a > 0)
+        .toList();
+    if (amounts.isEmpty) return null;
+    amounts.sort();
+    final mid = amounts.length ~/ 2;
+    if (amounts.length.isOdd) return amounts[mid];
+    return (amounts[mid - 1] + amounts[mid]) / 2;
+  }
+
+  /// Dias distintos com pelo menos um gasto no intervalo.
+  Future<int> countDistinctDaysWithSpend(int startMs, int endMs) async {
+    final database = await db;
+    final result = await database.rawQuery(
+      'SELECT COUNT(DISTINCT date(timestamp / 1000, "unixepoch", "localtime")) as c '
+      'FROM transactions WHERE timestamp >= ? AND timestamp <= ?',
       [startMs, endMs],
     );
     return (result.first['c'] as int?) ?? 0;

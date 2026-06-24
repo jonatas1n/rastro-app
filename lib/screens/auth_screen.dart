@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -55,17 +56,17 @@ class _AuthScreenState extends State<AuthScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 40),
-              Text('👁',  style: const TextStyle(fontSize: 48)),
-              const SizedBox(height: 20),
+              SvgPicture.asset('assets/logo.svg', width: 88),
+              const SizedBox(height: 24),
               Text(
                 _isLogin ? 'Bem-vindo de volta' : 'Criar conta',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                     fontSize: 26, fontWeight: FontWeight.w800, color: RastroColors.text),
               ),
               const SizedBox(height: 6),
               Text(
                 'Rastro — seu rastro financeiro',
-                style: GoogleFonts.dmSans(fontSize: 14, color: RastroColors.muted),
+                style: GoogleFonts.outfit(fontSize: 14, color: RastroColors.muted),
               ),
               const SizedBox(height: 36),
 
@@ -93,7 +94,7 @@ class _AuthScreenState extends State<AuthScreen> {
                       ? const SizedBox(width: 20, height: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
                       : Text(_isLogin ? 'Entrar' : 'Criar conta',
-                          style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w700)),
+                          style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),
               const SizedBox(height: 20),
@@ -103,7 +104,7 @@ class _AuthScreenState extends State<AuthScreen> {
                   onPressed: () => setState(() => _isLogin = !_isLogin),
                   child: Text(
                     _isLogin ? 'Não tem conta? Criar agora' : 'Já tenho conta',
-                    style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.sub),
+                    style: GoogleFonts.outfit(fontSize: 13, color: RastroColors.sub),
                   ),
                 ),
               ),
@@ -135,17 +136,17 @@ class _Field extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(label,
-            style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w600,
+            style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600,
                 color: RastroColors.sub)),
         const SizedBox(height: 6),
         TextField(
           controller:   controller,
           obscureText:  obscure,
           keyboardType: keyboard,
-          style: GoogleFonts.dmSans(fontSize: 14, color: RastroColors.text),
+          style: GoogleFonts.outfit(fontSize: 14, color: RastroColors.text),
           decoration: InputDecoration(
             hintText:        hint,
-            hintStyle:       GoogleFonts.dmSans(color: RastroColors.muted),
+            hintStyle:       GoogleFonts.outfit(color: RastroColors.muted),
             filled:          true,
             fillColor:       RastroColors.surface,
             contentPadding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

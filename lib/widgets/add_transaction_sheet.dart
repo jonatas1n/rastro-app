@@ -126,7 +126,7 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
           children: [
             Text(
               'Adicionar gasto',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.outfit(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: RastroColors.text,
@@ -135,12 +135,12 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
             const SizedBox(height: 4),
             Text(
               'Para dinheiro vivo e compras que o banco não notifica.',
-              style: GoogleFonts.dmSans(fontSize: 12, color: RastroColors.muted),
+              style: GoogleFonts.outfit(fontSize: 12, color: RastroColors.muted),
             ),
             const SizedBox(height: 14),
             Text(
               'Forma de pagamento',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.outfit(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: RastroColors.sub,
@@ -158,7 +158,7 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
                   onSelected: (_) => setState(() => _paymentKind = kind),
                   selectedColor: RastroColors.accent.withValues(alpha: 0.25),
                   backgroundColor: RastroColors.card,
-                  labelStyle: GoogleFonts.dmSans(
+                  labelStyle: GoogleFonts.outfit(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
                     color: selected ? RastroColors.text : RastroColors.sub,
@@ -174,7 +174,7 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
               controller: _placeCtrl,
               keyboardType: TextInputType.text,
               textCapitalization: TextCapitalization.sentences,
-              style: GoogleFonts.dmSans(color: RastroColors.text),
+              style: GoogleFonts.outfit(color: RastroColors.text),
               decoration: InputDecoration(
                 labelText: 'Local / descrição',
                 hintText: _paymentKind.placeHint,
@@ -185,14 +185,14 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
               controller: _amountCtrl,
               keyboardType: TextInputType.number,
               inputFormatters: [BrMoneyInputFormatter()],
-              style: GoogleFonts.dmSans(color: RastroColors.text),
+              style: GoogleFonts.outfit(color: RastroColors.text),
               decoration: const InputDecoration(labelText: 'Valor (R\$)'),
             ),
             const SizedBox(height: 8),
             DropdownButtonFormField<TransactionCategory>(
               value: _category,
               dropdownColor: RastroColors.card,
-              style: GoogleFonts.dmSans(color: RastroColors.text),
+              style: GoogleFonts.outfit(color: RastroColors.text),
               decoration: const InputDecoration(labelText: 'Categoria'),
               items: TransactionCategory.values
                   .map(
@@ -211,7 +211,7 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
               contentPadding: EdgeInsets.zero,
               title: Text(
                 'Essencial',
-                style: GoogleFonts.dmSans(color: RastroColors.text),
+                style: GoogleFonts.outfit(color: RastroColors.text),
               ),
               value: _essential,
               activeColor: RastroColors.accent,
@@ -221,12 +221,12 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
               contentPadding: EdgeInsets.zero,
               title: Text(
                 'Data e hora',
-                style: GoogleFonts.dmSans(color: RastroColors.text),
+                style: GoogleFonts.outfit(color: RastroColors.text),
               ),
               subtitle: Text(
                 '${_when.day.toString().padLeft(2, '0')}/${_when.month.toString().padLeft(2, '0')} '
                 '${_when.hour.toString().padLeft(2, '0')}:${_when.minute.toString().padLeft(2, '0')}',
-                style: GoogleFonts.dmSans(color: RastroColors.muted),
+                style: GoogleFonts.outfit(color: RastroColors.muted),
               ),
               trailing: const Icon(Icons.calendar_today, size: 18),
               onTap: () async {
@@ -266,7 +266,7 @@ class _AddTransactionSheetState extends State<_AddTransactionSheet> {
                 ),
                 child: Text(
                   'Registrar gasto',
-                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
                 ),
               ),
             ),

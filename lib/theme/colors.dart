@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class RastroColors {
+  // Paleta de marca
+  static const floresta  = Color(0xFF0D5C47);
+  static const jade      = Color(0xFF1D9E75);
+  static const esmeralda = Color(0xFF5DCAA5);
+  static const menta     = Color(0xFF9FE1CB);
+  static const nevoa     = Color(0xFFE1F5EE);
+
   // Fundos
   static const bg      = Color(0xFF0D0D0D);
   static const base    = Color(0xFF141414);
@@ -19,10 +26,10 @@ class RastroColors {
   static const muted = Color(0xFF666666);
 
   // Acentos
-  static const accent = Color(0xFFA8FF3E); // verde lima
-  static const danger = Color(0xFFFF5252); // vermelho
-  static const safe   = Color(0xFF2ECC71); // verde seguro
-  static const info   = Color(0xFF5B8DEF); // azul suave
+  static const accent = jade;
+  static const danger = Color(0xFFFF5252);
+  static const safe   = esmeralda;
+  static const info   = Color(0xFF5B8DEF);
 
   // Categorias
   static const catAlimentacao = Color(0xFFFF7043);
@@ -35,16 +42,16 @@ class RastroColors {
 
 class RastroTheme {
   static ThemeData get dark {
-    final base = ThemeData.dark();
+    final base = ThemeData.dark(useMaterial3: true);
     return base.copyWith(
       scaffoldBackgroundColor: RastroColors.base,
       colorScheme: const ColorScheme.dark(
-        primary:   RastroColors.accent,
-        secondary: RastroColors.safe,
+        primary:   RastroColors.jade,
+        secondary: RastroColors.esmeralda,
         surface:   RastroColors.surface,
         error:     RastroColors.danger,
       ),
-      textTheme: GoogleFonts.dmSansTextTheme(base.textTheme).apply(
+      textTheme: GoogleFonts.outfitTextTheme(base.textTheme).apply(
         bodyColor:    RastroColors.text,
         displayColor: RastroColors.text,
       ),

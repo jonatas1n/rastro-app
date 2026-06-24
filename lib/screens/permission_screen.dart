@@ -21,7 +21,7 @@ class PermissionScreen extends StatelessWidget {
               const Text('👁', style: TextStyle(fontSize: 48)),
               const SizedBox(height: 24),
               Text('Rastro precisa ver suas notificações',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                       fontSize: 22, fontWeight: FontWeight.w800,
                       color: RastroColors.text, height: 1.2)),
               const SizedBox(height: 16),
@@ -30,7 +30,7 @@ class PermissionScreen extends StatelessWidget {
                 'notificações dos seus aplicativos bancários.\n\n'
                 'Nenhum dado é enviado para servidores. '
                 'Tudo fica armazenado apenas no seu celular.',
-                style: GoogleFonts.dmSans(fontSize: 14, color: RastroColors.sub, height: 1.6),
+                style: GoogleFonts.outfit(fontSize: 14, color: RastroColors.sub, height: 1.6),
               ),
               const SizedBox(height: 36),
               SizedBox(
@@ -49,7 +49,7 @@ class PermissionScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text('Permitir acesso',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                           fontSize: 15, fontWeight: FontWeight.w700)),
                 ),
               ),

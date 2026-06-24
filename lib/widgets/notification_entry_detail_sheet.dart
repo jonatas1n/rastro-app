@@ -47,7 +47,7 @@ void showNotificationEntryDetailSheet(
                 const SizedBox(height: 16),
                 Text(
                   '${entry.passedCount} de ${entry.totalCount} critérios',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
                     color: RastroColors.text,
@@ -56,7 +56,7 @@ void showNotificationEntryDetailSheet(
                 const SizedBox(height: 4),
                 Text(
                   DateFormat('dd/MM/yyyy HH:mm:ss').format(entry.at),
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 12,
                     color: RastroColors.muted,
                   ),
@@ -84,7 +84,7 @@ void showNotificationEntryDetailSheet(
                             children: [
                               Text(
                                 c.label,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w600,
                                   color: RastroColors.text,
                                 ),
@@ -92,7 +92,7 @@ void showNotificationEntryDetailSheet(
                               if (c.detail != null && c.detail!.isNotEmpty)
                                 Text(
                                   c.detail!,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.outfit(
                                     fontSize: 11,
                                     color: RastroColors.muted,
                                   ),
@@ -108,7 +108,7 @@ void showNotificationEntryDetailSheet(
                 const SectionLabel(title: 'Pacote'),
                 SelectableText(
                   entry.packageName ?? '(null)',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 12,
                     color: RastroColors.sub,
                     fontFeatures: const [FontFeature.tabularFigures()],
@@ -118,7 +118,7 @@ void showNotificationEntryDetailSheet(
                 const SectionLabel(title: 'Título'),
                 SelectableText(
                   entry.title,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 13,
                     color: RastroColors.text,
                   ),
@@ -127,7 +127,7 @@ void showNotificationEntryDetailSheet(
                 const SectionLabel(title: 'Texto'),
                 SelectableText(
                   entry.body,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 13,
                     color: RastroColors.sub,
                   ),
@@ -251,7 +251,7 @@ void showBlockedAppsSheet(BuildContext context) {
               const SizedBox(height: 16),
               Text(
                 'Apps bloqueados',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: RastroColors.text,
@@ -260,7 +260,7 @@ void showBlockedAppsSheet(BuildContext context) {
               const SizedBox(height: 8),
               Text(
                 'Notificações destes pacotes não entram no parser nem geram gastos.',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontSize: 12,
                   color: RastroColors.muted,
                   height: 1.4,
@@ -275,7 +275,7 @@ void showBlockedAppsSheet(BuildContext context) {
                     'Selecione itens na lista e toque em bloquear, '
                     'ou use “Bloquear app” no detalhe.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                       fontSize: 13,
                       color: RastroColors.muted,
                       height: 1.5,
@@ -288,7 +288,7 @@ void showBlockedAppsSheet(BuildContext context) {
                     contentPadding: EdgeInsets.zero,
                     title: Text(
                       pkg,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                         fontSize: 13,
                         color: RastroColors.text,
                       ),
@@ -297,7 +297,7 @@ void showBlockedAppsSheet(BuildContext context) {
                       onPressed: () => blocklist.unblock(pkg),
                       child: Text(
                         'Desbloquear',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                           color: RastroColors.accent,
                           fontWeight: FontWeight.w600,
                         ),

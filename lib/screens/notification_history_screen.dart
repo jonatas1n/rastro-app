@@ -122,7 +122,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
             _selecting
                 ? '${_selectedIds.length} selecionado(s)'
                 : 'Histórico de notificações',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.outfit(
               fontWeight: FontWeight.w700,
               color: RastroColors.text,
             ),
@@ -163,7 +163,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
                 onPressed: () => context.read<NotificationDebugLog>().clear(),
                 child: Text(
                   'Limpar',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     color: RastroColors.muted,
                     fontWeight: FontWeight.w600,
                   ),
@@ -183,7 +183,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
                     'Nenhuma notificação capturada ainda.\n\n'
                     'Com permissão ativa, os pushes dos apps aparecem aqui.',
                     textAlign: TextAlign.center,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                       fontSize: 14,
                       color: RastroColors.muted,
                       height: 1.5,
@@ -206,7 +206,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
                             : () => _selectAll(items),
                         child: Text(
                           _selecting ? 'Cancelar seleção' : 'Selecionar todos',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.outfit(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: RastroColors.accent,
@@ -216,7 +216,7 @@ class _NotificationHistoryScreenState extends State<NotificationHistoryScreen> {
                       const Spacer(),
                       Text(
                         '${items.length} itens',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                           fontSize: 11,
                           color: RastroColors.muted,
                         ),

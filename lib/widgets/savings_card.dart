@@ -47,7 +47,7 @@ class SavingsCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('🌱 Potencial de economia',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontSize: 13, fontWeight: FontWeight.w700, color: RastroColors.safe)),
                 _PillBadge('$pct% não-essencial', color: RastroColors.safe),
               ],
@@ -83,22 +83,22 @@ class SavingsCard extends StatelessWidget {
                         children: [
                           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Text('Mês',
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.outfit(
                                     fontSize: 11, fontWeight: FontWeight.w600, color: RastroColors.safe)),
                             const SizedBox(height: 6),
                             FmtValue(amount: savingsMonth, size: 28, color: RastroColors.safe),
                             const SizedBox(height: 4),
                             Text('projeção 30 dias',
-                                style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+                                style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
                           ]),
                           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                             Text('$pct%',
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.outfit(
                                     fontSize: 32, fontWeight: FontWeight.w800, color: RastroColors.safe,
                                     height: 1)),
                             const SizedBox(height: 4),
                             Text('do total',
-                                style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+                                style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
                           ]),
                         ],
                       ),
@@ -138,11 +138,11 @@ class _MiniCell extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: RastroColors.safe)),
+              style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: RastroColors.safe)),
           const SizedBox(height: 6),
           FmtValue(amount: value, size: 20, color: RastroColors.safe),
           const SizedBox(height: 4),
-          Text(sub, style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+          Text(sub, style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
         ],
       ),
     );
@@ -164,7 +164,7 @@ class _PillBadge extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.25)),
       ),
       child: Text(text,
-          style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+          style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
     );
   }
 }
@@ -202,7 +202,7 @@ class _SavingsBarChart extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 Text(label,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontSize: 9, fontWeight: FontWeight.w700,
                         color: RastroColors.safe.withValues(alpha: opacity + 0.2))),
                 const SizedBox(height: 4),
@@ -217,7 +217,7 @@ class _SavingsBarChart extends StatelessWidget {
                 ),
                 const SizedBox(height: 6),
                 Text(b.label,
-                    style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w500,
+                    style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w500,
                         color: RastroColors.muted)),
               ],
             ),

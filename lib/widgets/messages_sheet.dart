@@ -36,13 +36,13 @@ class MessagesSheet extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('Mensagens',
-                  style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w700,
+                  style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700,
                       color: RastroColors.text)),
               if (prov.unreadCount > 0)
                 TextButton(
                   onPressed: prov.acknowledgeAll,
                   child: Text('Marcar tudo como lido',
-                      style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.accent)),
+                      style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.accent)),
                 ),
             ],
           ),
@@ -52,7 +52,7 @@ class MessagesSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 32),
               child: Text('Nenhuma mensagem ainda',
-                  style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.muted)),
+                  style: GoogleFonts.outfit(fontSize: 13, color: RastroColors.muted)),
             )
           else
             ...prov.messages.map((msg) => _MessageTile(msg: msg)),
@@ -93,7 +93,7 @@ class _MessageTile extends StatelessWidget {
             Expanded(
               child: Text(
                 msg.message,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontSize: 13,
                   color: msg.opened ? RastroColors.sub : RastroColors.text,
                   fontWeight: msg.opened ? FontWeight.w400 : FontWeight.w500,
@@ -130,7 +130,7 @@ class MessagesBadge extends StatelessWidget {
                     color: RastroColors.accent, shape: BoxShape.circle),
                 child: Center(
                   child: Text('$count',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                           fontSize: 9, fontWeight: FontWeight.w800, color: Colors.black)),
                 ),
               ),

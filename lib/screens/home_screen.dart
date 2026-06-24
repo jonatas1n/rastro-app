@@ -49,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: const Icon(Icons.add_rounded),
         label: Text(
           'Gasto',
-          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
+          style: GoogleFonts.outfit(fontWeight: FontWeight.w700),
         ),
       ),
       body: SafeArea(
@@ -127,7 +127,7 @@ class _Header extends StatelessWidget {
             ).createShader(bounds),
             child: Text(
               'rastro',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.outfit(
                 fontSize: 30,
                 fontWeight: FontWeight.w900,
                 color: Colors.white,
@@ -230,7 +230,7 @@ class _TotalCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text('TOTAL HOJE',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: RastroColors.muted,
@@ -238,7 +238,7 @@ class _TotalCard extends StatelessWidget {
               const Spacer(),
               Text(
                 _todayCountLabel(prov.todayList.length),
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
                   color: RastroColors.sub,
@@ -262,7 +262,7 @@ class _TotalCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 RichText(text: TextSpan(
-                  style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted),
+                  style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted),
                   children: [
                     const TextSpan(text: 'Essencial '),
                     TextSpan(text: 'R\$ ${essential.toStringAsFixed(0)}',
@@ -270,7 +270,7 @@ class _TotalCard extends StatelessWidget {
                   ],
                 )),
                 Text('Não-essencial R\$ ${nonEss.toStringAsFixed(0)}',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontSize: 11, fontWeight: FontWeight.w600, color: RastroColors.danger)),
               ],
             ),
@@ -310,7 +310,7 @@ class _TotalCard extends StatelessWidget {
                   children: [
                     Text(
                       'Ver gastos de hoje',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: RastroColors.accent,
@@ -375,7 +375,7 @@ class _DailySpendDeltaBadge extends StatelessWidget {
           const SizedBox(width: 2),
           Text(
             '${diffPct.abs()}%',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.outfit(
               fontSize: 12,
               fontWeight: FontWeight.w700,
               color: color,
@@ -427,14 +427,14 @@ class _SmallCard extends StatelessWidget {
       background: RastroColors.surface,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(label,
-            style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w600,
+            style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w600,
                 color: RastroColors.muted)),
         const SizedBox(height: 7),
         FmtValue(amount: value, size: 17),
         const SizedBox(height: 5),
         Text(sub,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+            style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
       ]),
     );
   }

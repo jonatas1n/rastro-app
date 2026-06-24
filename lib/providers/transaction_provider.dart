@@ -80,7 +80,7 @@ class TransactionProvider extends ChangeNotifier {
 
   // ── Actions ───────────────────────────────────────────────────────────────
 
-  Future<void> load() async {
+  Future<void> load({bool rescheduleDailySummary = true}) async {
     _loading = true;
     notifyListeners();
     final now = DateTime.now();
@@ -89,7 +89,9 @@ class TransactionProvider extends ChangeNotifier {
     _loading   = false;
     notifyListeners();
 
-    await SpendingSummaryNotification.refresh();
+    await SpendingSummaryNotification.refresh(
+      rescheduleDailySummary: rescheduleDailySummary,
+    );
 
     // Tenta sincronizar pendentes em background
     _sync.triggerSync();
@@ -98,8 +100,19 @@ class TransactionProvider extends ChangeNotifier {
   /// Inserção otimista: salva local → notifica UI → enfileira sync
   Future<void> addTransaction(Transaction tx) async {
     await _db.insert(tx);
-    await load();          // UI atualiza imediatamente
-    _sync.enqueue();       // sync em background
+    _loading = true;
+    notifyListeners();
+    final now = DateTime.now();
+    _todayList = await _db.getByDay(now);
+    _monthList = await _db.getByMonth(now);
+    _loading = false;
+    notifyListeners();
+
+    await SpendingSummaryNotification.refresh(
+      newTransaction: tx,
+      rescheduleDailySummary: true,
+    );
+    _sync.enqueue();
   }
 
   /// Toggle essencial — otimista: UI muda na hora, backend segue depois

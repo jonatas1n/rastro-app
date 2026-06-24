@@ -73,6 +73,27 @@ class LocalNotificationService {
     await _plugin.cancel(persistentSpendingSummaryId);
   }
 
+  /// Alertas de ritmo de gasto (variação, tetos, projeção).
+  static Future<void> showSpendingInsight({
+    required int id,
+    required String title,
+    required String body,
+  }) async {
+    await _plugin.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: _androidDetails(
+          channelId: 'spending_insights',
+          channelName: 'Alertas de ritmo',
+          channelDescription:
+              'Avisos quando gastos sobem ou descem muito em relação ao seu histórico.',
+        ),
+      ),
+    );
+  }
+
   /// Notificação visível na barra para testar o listener (tela de debug).
   static Future<void> showDebugTestNotification({
     required String title,
@@ -140,10 +161,12 @@ class LocalNotificationService {
   static AndroidNotificationDetails _androidDetails({
     required String channelId,
     required String channelName,
+    String? channelDescription,
   }) =>
       AndroidNotificationDetails(
         channelId,
         channelName,
+        channelDescription: channelDescription,
         importance: Importance.high,
         priority: Priority.high,
         icon: '@mipmap/ic_launcher',

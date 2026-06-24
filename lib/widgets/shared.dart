@@ -29,7 +29,7 @@ class FmtValue extends StatelessWidget {
       TextSpan(children: [
         TextSpan(
           text: 'R\$ ',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontSize:   size * 0.36,
             fontWeight: FontWeight.w500,
             color:      color.withValues(alpha: 0.5),
@@ -39,7 +39,7 @@ class FmtValue extends StatelessWidget {
         ),
         TextSpan(
           text: intPart,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontSize:      size,
             fontWeight:    FontWeight.w700,
             color:         color,
@@ -50,7 +50,7 @@ class FmtValue extends StatelessWidget {
         ),
         TextSpan(
           text: ',$decPart',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontSize:   size * 0.52,
             fontWeight: FontWeight.w500,
             color:      color.withValues(alpha: 0.6),
@@ -89,11 +89,11 @@ class SectionLabel extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(title,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.outfit(
                   fontSize: 14, fontWeight: FontWeight.w700, color: RastroColors.text)),
           if (right != null)
             Text(right!,
-                style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted)),
+                style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted)),
         ],
       ),
     );

@@ -77,7 +77,7 @@ class NotificationLogListTile extends StatelessWidget {
                       children: [
                         Text(
                           '$time · ${entry.passedCount}/${entry.totalCount}',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.outfit(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: scoreColor,
@@ -87,7 +87,7 @@ class NotificationLogListTile extends StatelessWidget {
                         if (packageBlocked)
                           Text(
                             'BLOQUEADO',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.outfit(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               color: RastroColors.muted,
@@ -96,7 +96,7 @@ class NotificationLogListTile extends StatelessWidget {
                         if (entry.saved)
                           Text(
                             'SALVO',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.outfit(
                               fontSize: 10,
                               fontWeight: FontWeight.w800,
                               color: RastroColors.safe,
@@ -109,7 +109,7 @@ class NotificationLogListTile extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                         fontWeight: FontWeight.w600,
                         color: RastroColors.text,
                       ),
@@ -117,7 +117,7 @@ class NotificationLogListTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                         fontSize: 11,
                         color: RastroColors.muted,
                       ),

@@ -8,6 +8,7 @@ import '../utils/br_money_input.dart';
 import '../widgets/shared.dart';
 import '../services/spending_summary_notification.dart';
 import '../services/app_preferences.dart';
+import '../services/spending_insight_prefs.dart';
 
 class FinanceSettingsScreen extends StatefulWidget {
   const FinanceSettingsScreen({super.key});
@@ -30,6 +31,9 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
   bool _saving = false;
   bool _persistentNotif = true;
   bool _loadingNotifPref = true;
+  bool _insightAlerts = true;
+  bool _dailySummary22 = true;
+  bool _loadingInsightPrefs = true;
 
   @override
   void initState() {
@@ -37,6 +41,18 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
     final p = context.read<FinanceProfileProvider>().profile;
     _fill(p);
     _loadNotifPref();
+    _loadInsightPrefs();
+  }
+
+  Future<void> _loadInsightPrefs() async {
+    final alerts = await SpendingInsightPrefs.insightsEnabled;
+    final summary = await SpendingInsightPrefs.dailySummaryAt22Enabled;
+    if (!mounted) return;
+    setState(() {
+      _insightAlerts = alerts;
+      _dailySummary22 = summary;
+      _loadingInsightPrefs = false;
+    });
   }
 
   Future<void> _loadNotifPref() async {
@@ -116,7 +132,7 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
         backgroundColor: RastroColors.base,
         elevation: 0,
         title: Text('Renda e metas',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.outfit(
                 fontWeight: FontWeight.w700, color: RastroColors.text)),
         iconTheme: const IconThemeData(color: RastroColors.sub),
       ),
@@ -154,7 +170,7 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
           const SizedBox(height: 6),
           Text(
             'Ex.: recebe dia 5 e o ciclo fecha dia 4 do mês seguinte.',
-            style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted),
+            style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted),
           ),
           const SizedBox(height: 20),
           SectionLabel(title: 'Metas de gasto'),
@@ -201,14 +217,14 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
               contentPadding: EdgeInsets.zero,
               title: Text(
                 'Resumo fixo na barra',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontWeight: FontWeight.w600,
                   color: RastroColors.text,
                 ),
               ),
               subtitle: Text(
                 'Mostra gastos e metas. Deslizar não remove — desative aqui.',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontSize: 11,
                   color: RastroColors.muted,
                 ),
@@ -219,6 +235,64 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
                   : (v) async {
                       setState(() => _persistentNotif = v);
                       await SpendingSummaryNotification.setEnabled(v);
+                    },
+              activeColor: RastroColors.accent,
+            ),
+          ),
+          const SizedBox(height: 10),
+          RastroCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Alertas de ritmo',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.text,
+                ),
+              ),
+              subtitle: Text(
+                'Aviso quando gastos sobem ou descem muito (máx. 1/dia).',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  color: RastroColors.muted,
+                ),
+              ),
+              value: _insightAlerts,
+              onChanged: _loadingInsightPrefs
+                  ? null
+                  : (v) async {
+                      setState(() => _insightAlerts = v);
+                      await SpendingInsightPrefs.setInsightsEnabled(v);
+                    },
+              activeColor: RastroColors.accent,
+            ),
+          ),
+          const SizedBox(height: 10),
+          RastroCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                'Resumo às 22h',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.text,
+                ),
+              ),
+              subtitle: Text(
+                'Notificação diária com total do dia vs sua média recente.',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  color: RastroColors.muted,
+                ),
+              ),
+              value: _dailySummary22,
+              onChanged: _loadingInsightPrefs
+                  ? null
+                  : (v) async {
+                      setState(() => _dailySummary22 = v);
+                      await SpendingInsightPrefs.setDailySummaryAt22Enabled(v);
                     },
               activeColor: RastroColors.accent,
             ),
@@ -241,7 +315,7 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : Text('Salvar',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.outfit(
                           fontWeight: FontWeight.w700, color: Colors.black)),
             ),
           ),
@@ -272,12 +346,12 @@ class _Field extends StatelessWidget {
       controller: controller,
       keyboardType: isMoney ? TextInputType.number : keyboard,
       inputFormatters: isMoney ? [BrMoneyInputFormatter()] : null,
-      style: GoogleFonts.dmSans(color: RastroColors.text),
+      style: GoogleFonts.outfit(color: RastroColors.text),
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        labelStyle: GoogleFonts.dmSans(color: RastroColors.muted, fontSize: 12),
-        hintStyle: GoogleFonts.dmSans(color: RastroColors.muted),
+        labelStyle: GoogleFonts.outfit(color: RastroColors.muted, fontSize: 12),
+        hintStyle: GoogleFonts.outfit(color: RastroColors.muted),
         filled: true,
         fillColor: RastroColors.surface,
         border: OutlineInputBorder(
@@ -322,11 +396,11 @@ class _GoalToggle extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(title,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                             fontWeight: FontWeight.w700,
                             color: RastroColors.text)),
                     Text(subtitle,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                             fontSize: 11, color: RastroColors.muted)),
                   ],
                 ),

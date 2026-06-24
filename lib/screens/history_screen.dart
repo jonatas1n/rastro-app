@@ -128,11 +128,11 @@ class _TopBar extends StatelessWidget {
                 controller:  searchCtrl,
                 onChanged:   onSearch,
                 textAlignVertical: TextAlignVertical.center,
-                style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.text, height: 1.2),
+                style: GoogleFonts.outfit(fontSize: 13, color: RastroColors.text, height: 1.2),
                 decoration: InputDecoration(
                   isDense: true,
                   hintText:       'Buscar estabelecimento...',
-                  hintStyle:      GoogleFonts.dmSans(fontSize: 13, color: RastroColors.muted, height: 1.2),
+                  hintStyle:      GoogleFonts.outfit(fontSize: 13, color: RastroColors.muted, height: 1.2),
                   prefixIcon: const Icon(Icons.search_rounded, color: RastroColors.muted, size: 18),
                   prefixIconConstraints: const BoxConstraints(minWidth: 40, minHeight: 40),
                   suffixIcon: searchCtrl.text.isNotEmpty
@@ -250,7 +250,7 @@ class _FilterRow extends StatelessWidget {
                 onPressed: prov.clearFilters,
                 icon: const Icon(Icons.close_rounded, size: 14, color: RastroColors.muted),
                 label: Text('Limpar filtros',
-                    style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted)),
+                    style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted)),
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),
               ),
             ),
@@ -282,7 +282,7 @@ class _CatChip extends StatelessWidget {
           ),
         ),
         child: Text(label,
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.outfit(
               fontSize: 11, fontWeight: FontWeight.w600,
               color: selected ? RastroColors.accent : RastroColors.sub,
             )),
@@ -316,7 +316,7 @@ class _ToggleChip extends StatelessWidget {
           border: Border.all(color: selected ? color.withValues(alpha: 0.4) : RastroColors.border),
         ),
         child: Text(label,
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.outfit(
               fontSize: 11, fontWeight: FontWeight.w600,
               color: selected ? color : RastroColors.sub,
             )),
@@ -375,7 +375,7 @@ class _DateRangeButton extends StatelessWidget {
                 color: hasRange ? RastroColors.info : RastroColors.muted),
             const SizedBox(width: 5),
             Text(label,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.outfit(
                   fontSize: 11, fontWeight: FontWeight.w600,
                   color: hasRange ? RastroColors.info : RastroColors.sub,
                 )),
@@ -445,7 +445,7 @@ class _StatCell extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: GoogleFonts.dmSans(fontSize: 10, color: RastroColors.muted)),
+        Text(label, style: GoogleFonts.outfit(fontSize: 10, color: RastroColors.muted)),
         const SizedBox(height: 3),
         Row(
           crossAxisAlignment: CrossAxisAlignment.end,
@@ -453,7 +453,7 @@ class _StatCell extends StatelessWidget {
             FmtValue(amount: value, size: 16, color: color),
             if (suffix.isNotEmpty)
               Text(suffix,
-                  style: GoogleFonts.dmSans(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
+                  style: GoogleFonts.outfit(fontSize: 10, color: color, fontWeight: FontWeight.w600)),
           ],
         ),
       ],
@@ -515,7 +515,7 @@ class _ResultsList extends StatelessWidget {
                 children: [
                   Text(
                     _dayLabel(day),
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                         fontSize: 12, fontWeight: FontWeight.w700, color: RastroColors.sub),
                   ),
                   FmtValue(amount: dayTotal, size: 12, color: RastroColors.muted),
@@ -561,14 +561,14 @@ class _EmptyState extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             hasFilter ? 'Nenhum resultado para esse filtro' : 'Nenhum gasto registrado ainda',
-            style: GoogleFonts.dmSans(fontSize: 14, color: RastroColors.muted),
+            style: GoogleFonts.outfit(fontSize: 14, color: RastroColors.muted),
           ),
           if (hasFilter) ...[
             const SizedBox(height: 8),
             TextButton(
               onPressed: () => context.read<HistoryProvider>().clearFilters(),
               child: Text('Limpar filtros',
-                  style: GoogleFonts.dmSans(fontSize: 12, color: RastroColors.accent)),
+                  style: GoogleFonts.outfit(fontSize: 12, color: RastroColors.accent)),
             ),
           ],
         ],

@@ -17,6 +17,8 @@ import 'screens/auth_screen.dart';
 import 'screens/permission_screen.dart';
 import 'services/notification_blocklist.dart';
 import 'services/notification_debug_log.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+
 import 'theme/colors.dart';
 
 void main() async {
@@ -94,16 +96,7 @@ class _RastroAppState extends State<RastroApp> with WidgetsBindingObserver {
     return MaterialApp(
       title: 'Rastro',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.dark(
-          primary:   RastroColors.accent,
-          secondary: RastroColors.safe,
-          surface:   RastroColors.surface,
-          error:     RastroColors.danger,
-        ),
-        scaffoldBackgroundColor: RastroColors.base,
-        useMaterial3: true,
-      ),
+      theme: RastroTheme.dark,
       home: _RootGate(hasNotifPermission: _hasNotifPermission, onPermissionCheck: _checkPermission),
     );
   }
@@ -121,9 +114,18 @@ class _RootGate extends StatelessWidget {
 
     // Aguarda verificação inicial
     if (authState == AuthState.unknown) {
-      return const Scaffold(
+      return Scaffold(
         backgroundColor: RastroColors.base,
-        body: Center(child: CircularProgressIndicator(color: RastroColors.accent)),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SvgPicture.asset('assets/logo.svg', width: 80),
+              const SizedBox(height: 28),
+              const CircularProgressIndicator(color: RastroColors.accent),
+            ],
+          ),
+        ),
       );
     }
 

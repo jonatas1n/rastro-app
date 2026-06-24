@@ -88,9 +88,9 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
       builder: (c) => AlertDialog(
         backgroundColor: RastroColors.surface,
         title: Text('Excluir gasto?',
-            style: GoogleFonts.dmSans(color: RastroColors.text)),
+            style: GoogleFonts.outfit(color: RastroColors.text)),
         content: Text('Esta ação remove o registro deste aparelho.',
-            style: GoogleFonts.dmSans(color: RastroColors.sub)),
+            style: GoogleFonts.outfit(color: RastroColors.sub)),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(c, false),
@@ -125,7 +125,7 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Editar gasto',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.outfit(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
                   color: RastroColors.text)),
@@ -134,7 +134,7 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
             controller: _placeCtrl,
             keyboardType: TextInputType.text,
             textCapitalization: TextCapitalization.sentences,
-            style: GoogleFonts.dmSans(color: RastroColors.text),
+            style: GoogleFonts.outfit(color: RastroColors.text),
             decoration: const InputDecoration(labelText: 'Local / descrição'),
           ),
           const SizedBox(height: 8),
@@ -142,14 +142,14 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
             controller: _amountCtrl,
             keyboardType: TextInputType.number,
             inputFormatters: [BrMoneyInputFormatter()],
-            style: GoogleFonts.dmSans(color: RastroColors.text),
+            style: GoogleFonts.outfit(color: RastroColors.text),
             decoration: const InputDecoration(labelText: 'Valor (R\$)'),
           ),
           const SizedBox(height: 8),
           DropdownButtonFormField<TransactionCategory>(
             value: _category,
             dropdownColor: RastroColors.card,
-            style: GoogleFonts.dmSans(color: RastroColors.text),
+            style: GoogleFonts.outfit(color: RastroColors.text),
             decoration: const InputDecoration(labelText: 'Categoria'),
             items: TransactionCategory.values
                 .map((c) => DropdownMenuItem(
@@ -165,7 +165,7 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: Text('Essencial',
-                style: GoogleFonts.dmSans(color: RastroColors.text)),
+                style: GoogleFonts.outfit(color: RastroColors.text)),
             value: _essential,
             activeColor: RastroColors.accent,
             onChanged: (v) => setState(() => _essential = v),
@@ -173,11 +173,11 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
           ListTile(
             contentPadding: EdgeInsets.zero,
             title: Text('Data e hora',
-                style: GoogleFonts.dmSans(color: RastroColors.text)),
+                style: GoogleFonts.outfit(color: RastroColors.text)),
             subtitle: Text(
               '${_when.day.toString().padLeft(2, '0')}/${_when.month.toString().padLeft(2, '0')} '
               '${_when.hour.toString().padLeft(2, '0')}:${_when.minute.toString().padLeft(2, '0')}',
-              style: GoogleFonts.dmSans(color: RastroColors.muted),
+              style: GoogleFonts.outfit(color: RastroColors.muted),
             ),
             trailing: const Icon(Icons.calendar_today, size: 18),
             onTap: () async {
@@ -215,13 +215,13 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child: Text('Salvar alterações',
-                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w700)),
             ),
           ),
           TextButton(
             onPressed: _delete,
             child: Text('Excluir gasto',
-                style: GoogleFonts.dmSans(color: RastroColors.danger)),
+                style: GoogleFonts.outfit(color: RastroColors.danger)),
           ),
         ],
       ),

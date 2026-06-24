@@ -66,28 +66,28 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
         backgroundColor: RastroColors.surface,
         title: Text(
           count == 1 ? 'Apagar gasto?' : 'Apagar $count gastos?',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontWeight: FontWeight.w700,
             color: RastroColors.text,
           ),
         ),
         content: Text(
           'Esta ação remove os gastos do aparelho. Não dá para desfazer.',
-          style: GoogleFonts.dmSans(fontSize: 13, color: RastroColors.sub),
+          style: GoogleFonts.outfit(fontSize: 13, color: RastroColors.sub),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(
               'Cancelar',
-              style: GoogleFonts.dmSans(color: RastroColors.muted),
+              style: GoogleFonts.outfit(color: RastroColors.muted),
             ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
             child: Text(
               'Apagar',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.outfit(
                 color: RastroColors.danger,
                 fontWeight: FontWeight.w700,
               ),
@@ -140,7 +140,7 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
         elevation: 0,
         title: Text(
           'Gastos de hoje',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontWeight: FontWeight.w700,
             color: RastroColors.text,
           ),
@@ -155,7 +155,7 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
             child: Text(
               sectionHint,
               textAlign: TextAlign.end,
-              style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted),
+              style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted),
             ),
           ),
           if (txs.isNotEmpty)
@@ -168,7 +168,7 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
                       onPressed: _exitSelection,
                       child: Text(
                         'Cancelar',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: RastroColors.muted,
@@ -179,7 +179,7 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
                       onPressed: () => _selectAll(txs),
                       child: Text(
                         'Todos do dia',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: RastroColors.accent,
@@ -195,7 +195,7 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
                           size: 18, color: RastroColors.danger),
                       label: Text(
                         'Apagar',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: RastroColors.danger,
@@ -207,7 +207,7 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
                       onPressed: () => setState(() => _selecting = true),
                       child: Text(
                         'Selecionar',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.outfit(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: RastroColors.accent,
@@ -268,13 +268,13 @@ class _EmptyToday extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             'Nenhum gasto registrado ainda hoje',
-            style: GoogleFonts.dmSans(fontSize: 14, color: RastroColors.muted),
+            style: GoogleFonts.outfit(fontSize: 14, color: RastroColors.muted),
           ),
           const SizedBox(height: 6),
           Text(
             'Use o botão Gasto ou aguarde notificações do banco',
             textAlign: TextAlign.center,
-            style: GoogleFonts.dmSans(fontSize: 12, color: RastroColors.muted),
+            style: GoogleFonts.outfit(fontSize: 12, color: RastroColors.muted),
           ),
         ],
       ),

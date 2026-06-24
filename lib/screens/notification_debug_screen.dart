@@ -41,7 +41,7 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
         elevation: 0,
         title: Text(
           'Debug de notificações',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.outfit(
             fontWeight: FontWeight.w700,
             color: RastroColors.text,
           ),
@@ -85,7 +85,7 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
                 : const Icon(Icons.science_outlined, size: 20),
             label: Text(
               'Gerar notificação de teste',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
             ),
             style: FilledButton.styleFrom(
               backgroundColor: RastroColors.accent,
@@ -113,7 +113,7 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
               if (system.isEmpty) {
                 return Text(
                   'Nenhum diagnóstico registrado.',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 13,
                     color: RastroColors.muted,
                   ),
@@ -131,7 +131,7 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
                             children: [
                               Text(
                                 e.title,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.outfit(
                                   fontWeight: FontWeight.w600,
                                   color: RastroColors.text,
                                   fontSize: 13,
@@ -140,7 +140,7 @@ class _NotificationDebugScreenState extends State<NotificationDebugScreen> {
                               const SizedBox(height: 4),
                               Text(
                                 e.body,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.outfit(
                                   fontSize: 11,
                                   color: RastroColors.muted,
                                   height: 1.35,
@@ -175,7 +175,7 @@ class _StatusPanel extends StatelessWidget {
         children: [
           Text(
             'Estado do listener',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.outfit(
               fontWeight: FontWeight.w700,
               color: RastroColors.text,
             ),
@@ -217,7 +217,7 @@ class _StatusRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.sub),
+              style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.sub),
             ),
           ),
         ],

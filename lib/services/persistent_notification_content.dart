@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import '../models/finance_profile.dart';
+import 'spending_insight_config.dart';
 import 'spending_snapshot.dart';
 
 class PersistentNotificationContent {
@@ -82,9 +83,25 @@ String _headline({
   required double periodSpend,
 }) {
   if (profile.weeklyLimitEnabled && (profile.weeklySpendingLimit ?? 0) > 0) {
+    final limit = profile.weeklySpendingLimit!;
+    final pct = (snapshot.weekTotal / limit * 100).round();
+    if (pct >= SpendingInsightConfig.limitBand100) {
+      return 'Teto semanal no limite · ${_currency.format(snapshot.weekTotal)}';
+    }
+    if (pct >= SpendingInsightConfig.limitBand80) {
+      return 'Teto semanal $pct% · ${_currency.format(snapshot.weekTotal)}';
+    }
     return 'Semana ${_currency.format(snapshot.weekTotal)}';
   }
   if (profile.monthlyLimitEnabled && (profile.monthlySpendingLimit ?? 0) > 0) {
+    final limit = profile.monthlySpendingLimit!;
+    final pct = (periodSpend / limit * 100).round();
+    if (pct >= SpendingInsightConfig.limitBand100) {
+      return 'Teto do ciclo no limite · ${_currency.format(periodSpend)}';
+    }
+    if (pct >= SpendingInsightConfig.limitBand80) {
+      return 'Ciclo $pct% · ${_currency.format(periodSpend)}';
+    }
     return 'Ciclo ${_currency.format(periodSpend)}';
   }
   if (profile.monthEndBalanceEnabled &&

@@ -117,7 +117,7 @@ class TransactionItem extends StatelessWidget {
                   Text(
                     tx.place,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.outfit(
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: essential ? RastroColors.text : RastroColors.muted,
                       decoration: essential ? null : TextDecoration.lineThrough,
@@ -127,7 +127,7 @@ class TransactionItem extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '${cat.label} · $time',
-                    style: GoogleFonts.dmSans(fontSize: 11, color: RastroColors.muted),
+                    style: GoogleFonts.outfit(fontSize: 11, color: RastroColors.muted),
                   ),
                 ],
               ),
@@ -153,7 +153,7 @@ class TransactionItem extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   essential ? 'Essencial' : 'Não-essencial',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.outfit(
                     fontSize: 10, fontWeight: FontWeight.w600,
                     color: essential ? RastroColors.muted : RastroColors.danger,
                   ),
