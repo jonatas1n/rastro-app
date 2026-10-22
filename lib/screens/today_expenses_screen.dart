@@ -112,12 +112,141 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
     );
   }
 
+  Future<void> _applyEssentialBulk(bool essential) async {
+    if (_selectedIds.isEmpty) return;
+    final count = _selectedIds.length;
+
+    await context
+        .read<TransactionProvider>()
+        .setEssentialMany(_selectedIds, essential);
+    if (!mounted) return;
+    _exitSelection();
+    await context.read<FinanceProfileProvider>().refreshSpending();
+    if (!mounted) return;
+
+    final label = essential ? 'essenciais' : 'não-essenciais';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          count == 1
+              ? 'Gasto marcado como ${essential ? 'essencial' : 'não-essencial'}'
+              : '$count gastos marcados como $label',
+        ),
+      ),
+    );
+  }
+
   void _openHistory({bool todayOnly = false}) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => HistoryScreen(todayOnly: todayOnly),
       ),
+    );
+  }
+
+  Widget _selectionToolbar(List<Transaction> txs) {
+    final count = _selectedIds.length;
+    final hasSelection = count > 0;
+    final countLabel = count == 0
+        ? 'Nenhum selecionado'
+        : count == 1
+            ? '1 selecionado'
+            : '$count selecionados';
+
+    Color actionColor(Color enabled) =>
+        hasSelection ? enabled : RastroColors.muted.withValues(alpha: 0.45);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            TextButton(
+              onPressed: _exitSelection,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.muted,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                countLabel,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.sub,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => _selectAll(txs),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Todos do dia',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.accent,
+                ),
+              ),
+            ),
+          ],
+        ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              onPressed:
+                  hasSelection ? () => _applyEssentialBulk(true) : null,
+              icon: Icon(
+                Icons.star_rounded,
+                size: 22,
+                color: actionColor(RastroColors.accent),
+              ),
+              tooltip: 'Marcar como essencial',
+              visualDensity: VisualDensity.compact,
+            ),
+            IconButton(
+              onPressed:
+                  hasSelection ? () => _applyEssentialBulk(false) : null,
+              icon: Icon(
+                Icons.block_rounded,
+                size: 22,
+                color: actionColor(RastroColors.danger),
+              ),
+              tooltip: 'Marcar como não-essencial',
+              visualDensity: VisualDensity.compact,
+            ),
+            IconButton(
+              onPressed: hasSelection ? () => _confirmDelete(count) : null,
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                size: 22,
+                color: actionColor(RastroColors.danger),
+              ),
+              tooltip: 'Apagar selecionados',
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -128,10 +257,10 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
     final preview = txs.take(_previewLimit).toList();
     final hasMoreToday = txs.length > _previewLimit;
     final sectionHint = _selecting
-        ? '${_selectedIds.length} selecionado(s)'
+        ? 'Toque para marcar ou desmarcar'
         : hasMoreToday
             ? 'Últimos $_previewLimit de ${txs.length}'
-            : 'Toque para marcar · segure para selecionar';
+            : 'Toque para editar · segure para selecionar';
 
     return Scaffold(
       backgroundColor: RastroColors.base,
@@ -161,61 +290,23 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
           if (txs.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Row(
-                children: [
-                  if (_selecting) ...[
-                    TextButton(
-                      onPressed: _exitSelection,
-                      child: Text(
-                        'Cancelar',
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: RastroColors.muted,
+              child: _selecting
+                  ? _selectionToolbar(txs)
+                  : Row(
+                      children: [
+                        TextButton(
+                          onPressed: () => setState(() => _selecting = true),
+                          child: Text(
+                            'Selecionar',
+                            style: GoogleFonts.outfit(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: RastroColors.accent,
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () => _selectAll(txs),
-                      child: Text(
-                        'Todos do dia',
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: RastroColors.accent,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: _selectedIds.isEmpty
-                          ? null
-                          : () => _confirmDelete(_selectedIds.length),
-                      icon: const Icon(Icons.delete_outline_rounded,
-                          size: 18, color: RastroColors.danger),
-                      label: Text(
-                        'Apagar',
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: RastroColors.danger,
-                        ),
-                      ),
-                    ),
-                  ] else
-                    TextButton(
-                      onPressed: () => setState(() => _selecting = true),
-                      child: Text(
-                        'Selecionar',
-                        style: GoogleFonts.outfit(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: RastroColors.accent,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
             ),
           if (txs.isEmpty)
             _EmptyToday()
@@ -227,14 +318,13 @@ class _TodayExpensesScreenState extends State<TodayExpensesScreen> {
                   tx: tx,
                   selecting: _selecting,
                   selected: _selectedIds.contains(tx.localId),
-                  onToggle: () {
+                  onTap: () {
                     if (_selecting) {
                       _toggleSelection(tx.localId);
                       return;
                     }
-                    context.read<TransactionProvider>().toggleEssential(tx);
+                    showEditTransactionSheet(context, tx);
                   },
-                  onEdit: () => showEditTransactionSheet(context, tx),
                   onLongPress: () => _startSelection(tx.localId),
                 ),
               ),

@@ -34,6 +34,18 @@ class FinanceProfile {
       (monthlyLimitEnabled && (monthlySpendingLimit ?? 0) > 0) ||
       (monthEndBalanceEnabled && monthEndTargetBalance != null);
 
+  /// Perfil ainda no padrão de fábrica (ex.: após reinstall antes do restore).
+  bool get isDefaultConfiguration =>
+      monthlyIncome == 0 &&
+      payDay == 1 &&
+      cycleEndDay == 31 &&
+      !weeklyLimitEnabled &&
+      weeklySpendingLimit == null &&
+      !monthlyLimitEnabled &&
+      monthlySpendingLimit == null &&
+      !monthEndBalanceEnabled &&
+      monthEndTargetBalance == null;
+
   FinanceProfile copyWith({
     double? monthlyIncome,
     int? payDay,

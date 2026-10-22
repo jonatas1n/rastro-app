@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../services/api_client.dart';
+import '../services/notification_pipeline.dart';
 import '../services/sync_queue.dart';
 
 enum AuthState { unknown, unauthenticated, authenticated }
@@ -23,6 +26,7 @@ class AuthProvider extends ChangeNotifier {
     if (stored != null) {
       _name  = stored.name;
       _state = AuthState.authenticated;
+      unawaited(_syncWhitelist());
     } else {
       _state = AuthState.unauthenticated;
     }
@@ -37,6 +41,7 @@ class AuthProvider extends ChangeNotifier {
       _name  = result.name;
       _state = AuthState.authenticated;
       notifyListeners();
+      unawaited(_syncWhitelist());
       return true;
     } on ApiException catch (e) {
       _error = e.message;
@@ -58,6 +63,7 @@ class AuthProvider extends ChangeNotifier {
       _name  = result.name;
       _state = AuthState.authenticated;
       notifyListeners();
+      unawaited(_syncWhitelist());
       return true;
     } on ApiException catch (e) {
       _error = e.message;
@@ -71,7 +77,16 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> _syncWhitelist() async {
+    try {
+      await NotificationWhitelistSync.refresh(_api);
+    } catch (e, st) {
+      debugPrint('Whitelist de notificações: $e\n$st');
+    }
+  }
+
   Future<void> logout() async {
+    _api.clearSession();
     await AuthStorage.clear();
     _state = AuthState.unauthenticated;
     _name  = '';

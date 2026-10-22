@@ -3,6 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../providers/finance_profile_provider.dart';
+import '../providers/transaction_provider.dart';
 import '../theme/colors.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -33,6 +35,14 @@ class _AuthScreenState extends State<AuthScreen> {
     final ok = _isLogin
         ? await auth.login(_email.text.trim(), _password.text)
         : await auth.register(_email.text.trim(), _password.text, _name.text.trim());
+
+    if (ok && mounted) {
+      final txProv = context.read<TransactionProvider>();
+      final finProv = context.read<FinanceProfileProvider>();
+      await txProv.restoreFromServer();
+      if (!mounted) return;
+      await finProv.restoreFromServer();
+    }
 
     if (mounted) setState(() => _loading = false);
     if (!ok && mounted) {
@@ -116,7 +126,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 }
 
-class _Field extends StatelessWidget {
+class _Field extends StatefulWidget {
   final TextEditingController controller;
   final String label, hint;
   final bool   obscure;
@@ -131,25 +141,43 @@ class _Field extends StatelessWidget {
   });
 
   @override
+  State<_Field> createState() => _FieldState();
+}
+
+class _FieldState extends State<_Field> {
+  late bool _obscured = widget.obscure;
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
+        Text(widget.label,
             style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600,
                 color: RastroColors.sub)),
         const SizedBox(height: 6),
         TextField(
-          controller:   controller,
-          obscureText:  obscure,
-          keyboardType: keyboard,
+          controller:   widget.controller,
+          obscureText:  _obscured,
+          keyboardType: widget.keyboard,
           style: GoogleFonts.outfit(fontSize: 14, color: RastroColors.text),
           decoration: InputDecoration(
-            hintText:        hint,
+            hintText:        widget.hint,
             hintStyle:       GoogleFonts.outfit(color: RastroColors.muted),
             filled:          true,
             fillColor:       RastroColors.surface,
             contentPadding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            suffixIcon: widget.obscure
+                ? IconButton(
+                    onPressed: () => setState(() => _obscured = !_obscured),
+                    icon: Icon(
+                      _obscured ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      color: RastroColors.muted,
+                      size: 20,
+                    ),
+                    tooltip: _obscured ? 'Mostrar senha' : 'Ocultar senha',
+                  )
+                : null,
             border:          OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide:   const BorderSide(color: RastroColors.border),

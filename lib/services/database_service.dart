@@ -14,7 +14,7 @@ class DatabaseService {
 
   static Future<Database> _init() async {
     final path = join(await getDatabasesPath(), 'rastro.db');
-    return openDatabase(path, version: 3, onCreate: _onCreate, onUpgrade: _onUpgrade);
+    return openDatabase(path, version: 4, onCreate: _onCreate, onUpgrade: _onUpgrade);
   }
 
   static Future<void> _onCreate(Database db, int version) async {
@@ -54,6 +54,25 @@ class DatabaseService {
       )
     ''');
     await db.insert('finance_profile', {'id': 1, ...FinanceProfile().toMap()});
+    await _createNotificationTables(db);
+  }
+
+  static Future<void> _createNotificationTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS notifications_cache (
+        template_hash    TEXT PRIMARY KEY,
+        template_mask    TEXT NOT NULL,
+        is_cost          INTEGER NOT NULL,
+        extraction_rules TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_whitelist (
+        package_name TEXT PRIMARY KEY,
+        display_name TEXT NOT NULL,
+        allowed      INTEGER NOT NULL DEFAULT 1
+      )
+    ''');
   }
 
   static Future<void> _onUpgrade(Database db, int oldV, int newV) async {
@@ -89,6 +108,9 @@ class DatabaseService {
         await db.insert('finance_profile', {'id': 1, ...FinanceProfile().toMap()});
       }
     }
+    if (oldV < 4) {
+      await _createNotificationTables(db);
+    }
   }
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
@@ -100,12 +122,101 @@ class DatabaseService {
     return t.copyWith();
   }
 
+  Future<int> countAll() async {
+    final database = await db;
+    final result = await database.rawQuery('SELECT COUNT(*) AS c FROM transactions');
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  /// True se existe alguma transação antes do início deste dia (00:00 local).
+  Future<bool> hasTransactionBefore(DateTime startDay) async {
+    final database = await db;
+    final startMs = DateTime(startDay.year, startDay.month, startDay.day)
+        .millisecondsSinceEpoch;
+    final result = await database.rawQuery(
+      'SELECT 1 FROM transactions WHERE timestamp < ? LIMIT 1',
+      [startMs],
+    );
+    return result.isNotEmpty;
+  }
+
+  /// Mescla transações vindas do servidor (restore pós-login/reinstall).
+  ///
+  /// Conflito: se já existir linha com o mesmo [local_id] e `synced = 0`, ou
+  /// houver registro em `pending_updates`, a linha local não é alterada (edits
+  /// offline pendentes têm prioridade). Caso contrário, insere ou atualiza com
+  /// `synced = 1` e `server_id` do servidor.
+  Future<int> upsertFromServer(Iterable<Transaction> remote) async {
+    final database = await db;
+    var applied = 0;
+
+    for (final t in remote) {
+      final pending = await database.query(
+        'pending_updates',
+        where: 'local_id = ?',
+        whereArgs: [t.localId],
+        limit: 1,
+      );
+      final existing = await database.query(
+        'transactions',
+        where: 'local_id = ?',
+        whereArgs: [t.localId],
+        limit: 1,
+      );
+
+      if (existing.isNotEmpty) {
+        final localSynced = (existing.first['synced'] as int? ?? 0) == 1;
+        if (!localSynced || pending.isNotEmpty) continue;
+
+        await database.update(
+          'transactions',
+          {
+            'server_id': t.serverId,
+            'place': t.place,
+            'amount': t.amount,
+            'category': t.category.dbValue,
+            'timestamp': t.timestamp.millisecondsSinceEpoch,
+            'is_essential': t.isEssential ? 1 : 0,
+            'raw_notification': t.rawNotification,
+            'synced': 1,
+          },
+          where: 'local_id = ?',
+          whereArgs: [t.localId],
+        );
+        applied++;
+        continue;
+      }
+
+      await database.insert(
+        'transactions',
+        t.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.abort,
+      );
+      applied++;
+    }
+
+    return applied;
+  }
+
   Future<void> updateEssential(String localId, bool essential) async {
     final database = await db;
     await database.update(
       'transactions',
       {'is_essential': essential ? 1 : 0},
       where: 'local_id = ?', whereArgs: [localId],
+    );
+  }
+
+  Future<void> updateEssentialMany(Iterable<String> localIds, bool essential) async {
+    final ids = localIds.toList();
+    if (ids.isEmpty) return;
+    final database = await db;
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    await database.update(
+      'transactions',
+      {'is_essential': essential ? 1 : 0},
+      where: 'local_id IN ($placeholders)',
+      whereArgs: ids,
     );
   }
 
@@ -305,6 +416,31 @@ class DatabaseService {
     return rows.map(Transaction.fromMap).toList();
   }
 
+  /// Inclusive calendar-day range (start 00:00 → end 23:59:59).
+  Future<List<Transaction>> getByDateRange(
+    DateTime startDay,
+    DateTime endDay,
+  ) async {
+    final database = await db;
+    final start = DateTime(startDay.year, startDay.month, startDay.day)
+        .millisecondsSinceEpoch;
+    final end = DateTime(
+      endDay.year,
+      endDay.month,
+      endDay.day,
+      23,
+      59,
+      59,
+    ).millisecondsSinceEpoch;
+    final rows = await database.query(
+      'transactions',
+      where: 'timestamp BETWEEN ? AND ?',
+      whereArgs: [start, end],
+      orderBy: 'timestamp DESC',
+    );
+    return rows.map(Transaction.fromMap).toList();
+  }
+
   /// Busca com filtros combinados para a tela de histórico.
   /// Todos os parâmetros são opcionais — sem nenhum retorna tudo.
   Future<List<Transaction>> search({
@@ -382,5 +518,93 @@ class DatabaseService {
       args.isEmpty ? null : args,
     );
     return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<List<Transaction>> getSince(DateTime since) async {
+    final database = await db;
+    final rows = await database.query(
+      'transactions',
+      where: 'timestamp >= ?',
+      whereArgs: [since.millisecondsSinceEpoch],
+    );
+    return rows.map(Transaction.fromMap).toList();
+  }
+
+  Future<void> saveNotificationTemplate({
+    required String templateHash,
+    required String templateMask,
+    required bool isCost,
+    required String extractionRules,
+  }) async {
+    final database = await db;
+    await database.insert(
+      'notifications_cache',
+      {
+        'template_hash': templateHash,
+        'template_mask': templateMask,
+        'is_cost': isCost ? 1 : 0,
+        'extraction_rules': extractionRules,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, Object?>?> findNotificationTemplate(String templateHash) async {
+    final database = await db;
+    final rows = await database.query(
+      'notifications_cache',
+      where: 'template_hash = ?',
+      whereArgs: [templateHash],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    return rows.first;
+  }
+
+  Future<List<String>> allowedPackageNames() async {
+    final database = await db;
+    final rows = await database.query(
+      'app_whitelist',
+      columns: ['package_name'],
+      where: 'allowed = 1',
+    );
+    return [
+      for (final row in rows)
+        if (row['package_name'] is String) row['package_name'] as String,
+    ];
+  }
+
+  Future<void> replaceAppWhitelist(List<AppWhitelistEntry> entries) async {
+    final database = await db;
+    await database.transaction((txn) async {
+      await txn.delete('app_whitelist');
+      for (final entry in entries) {
+        await txn.insert('app_whitelist', {
+          'package_name': entry.packageName,
+          'display_name': entry.displayName,
+          'allowed': entry.allowed ? 1 : 0,
+        });
+      }
+    });
+  }
+}
+
+class AppWhitelistEntry {
+  final String packageName;
+  final String displayName;
+  final bool allowed;
+
+  const AppWhitelistEntry({
+    required this.packageName,
+    required this.displayName,
+    required this.allowed,
+  });
+
+  factory AppWhitelistEntry.fromJson(Map<String, dynamic> json) {
+    return AppWhitelistEntry(
+      packageName: json['package_name'] as String? ?? '',
+      displayName: json['display_name'] as String? ?? '',
+      allowed: json['allowed'] as bool? ?? true,
+    );
   }
 }

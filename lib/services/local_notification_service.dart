@@ -1,8 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../models/transaction.dart';
+import 'notification_action_service.dart';
 
 final _fmt = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
 
@@ -11,7 +13,6 @@ class LocalNotificationService {
   static bool _tzReady = false;
 
   static const persistentSpendingSummaryId = 1001;
-  static const debugTestNotificationId = 9998;
 
   static Future<void> init() async {
     if (!_tzReady) {
@@ -23,6 +24,10 @@ class LocalNotificationService {
     const ios = DarwinInitializationSettings();
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
+      onDidReceiveNotificationResponse:
+          NotificationActionService.handleForeground,
+      onDidReceiveBackgroundNotificationResponse:
+          notificationActionBackgroundHandler,
     );
     await ensureAndroidPostPermission();
   }
@@ -94,43 +99,59 @@ class LocalNotificationService {
     );
   }
 
-  /// Notificação visível na barra para testar o listener (tela de debug).
-  static Future<void> showDebugTestNotification({
-    required String title,
-    required String body,
-  }) async {
-    await _plugin.show(
-      debugTestNotificationId,
-      '[Debug] $title',
-      body,
-      NotificationDetails(
-        android: AndroidNotificationDetails(
-          'debug_test',
-          'Testes de debug',
-          channelDescription:
-              'Notificações geradas pela tela de debug do Rastro.',
-          importance: Importance.defaultImportance,
-          priority: Priority.defaultPriority,
-          icon: '@mipmap/ic_launcher',
-        ),
-      ),
-    );
-  }
-
-  /// Notificação imediata ao detectar um gasto
+  /// Notificação imediata ao detectar um gasto, com ações rápidas de
+  /// classificação (marcar como essencial ou descartar como não-gasto).
   static Future<void> showTransactionAlert(Transaction tx) async {
+    await ensureAndroidPostPermission();
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    final enabled = await android?.areNotificationsEnabled() ?? true;
+    if (!enabled) {
+      debugPrint(
+        'LocalNotificationService: permissão de notificação negada — '
+        'alerta de gasto não exibido',
+      );
+      return;
+    }
+
     final cat = tx.category;
-    await _plugin.show(
-      tx.hashCode,
-      '${cat.emoji} ${cat.label} · ${tx.place}',
-      _fmt.format(tx.amount),
-      NotificationDetails(
-        android: _androidDetails(
-          channelId: 'transactions',
-          channelName: 'Gastos',
+    try {
+      await _plugin.show(
+        tx.localId.hashCode,
+        '${cat.emoji} ${cat.label} · ${tx.place}',
+        _fmt.format(tx.amount),
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'transactions',
+            'Gastos',
+            channelDescription:
+                'Aviso imediato quando um gasto é detectado, com ações rápidas.',
+            importance: Importance.high,
+            priority: Priority.high,
+            icon: '@mipmap/ic_launcher',
+            actions: const <AndroidNotificationAction>[
+              AndroidNotificationAction(
+                kTxMarkEssentialActionId,
+                'Marcar como essencial',
+                showsUserInterface: false,
+                cancelNotification: true,
+              ),
+              AndroidNotificationAction(
+                kTxNotExpenseActionId,
+                'Não é um gasto',
+                showsUserInterface: false,
+                cancelNotification: true,
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+        payload: tx.localId,
+      );
+    } catch (e, st) {
+      debugPrint(
+        'LocalNotificationService: falha ao exibir alerta de gasto: $e\n$st',
+      );
+    }
   }
 
   /// Resumo diário — agendado para 22h

@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/transaction.dart';
+import '../models/finance_profile.dart';
+import 'database_service.dart';
 
 class ApiClient {
   static const baseUrl = String.fromEnvironment(
@@ -47,13 +50,19 @@ class ApiClient {
   AuthResult _handleAuth(http.Response resp) {
     if (resp.statusCode == 200 || resp.statusCode == 201) {
       final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final token = data['access_token'] as String;
+      _token = token;
       return AuthResult(
-        token:  data['access_token'] as String,
+        token:  token,
         userId: data['user_id'] as int,
         name:   data['name'] as String,
       );
     }
     throw ApiException(_errorMessage(resp), resp.statusCode);
+  }
+
+  void clearSession() {
+    _token = null;
   }
 
   static String _errorMessage(http.Response resp) {
@@ -82,6 +91,60 @@ class ApiClient {
   }
 
   // ── Transactions ─────────────────────────────────────────────────────────
+
+  static Transaction transactionFromServerJson(Map<String, dynamic> j) {
+    final tsRaw = j['timestamp'];
+    final DateTime timestamp = tsRaw is String
+        ? DateTime.parse(tsRaw)
+        : DateTime.fromMillisecondsSinceEpoch(0);
+    return Transaction(
+      localId: j['local_id'] as String,
+      serverId: j['id'] as int,
+      place: j['place'] as String,
+      amount: (j['amount'] as num).toDouble(),
+      category: TransactionCategoryX.fromDb(j['category'] as String),
+      timestamp: timestamp,
+      isEssential: j['is_essential'] as bool? ?? true,
+      rawNotification: j['raw_notification'] as String?,
+      synced: true,
+    );
+  }
+
+  /// Baixa todas as transações do usuário (paginação automática).
+  static const _fetchPageSize = 100;
+  static const _fetchMaxRows = 10000;
+
+  Future<List<Transaction>> fetchAllTransactions() async {
+    await _loadToken();
+    final all = <Transaction>[];
+    var offset = 0;
+
+    while (all.length < _fetchMaxRows) {
+      final uri = Uri.parse(
+        '$_baseUrl/transactions?limit=$_fetchPageSize&offset=$offset',
+      );
+      final resp = await http.get(uri, headers: _headers);
+
+      if (resp.statusCode != 200) {
+        throw ApiException(
+          'Falha ao buscar transações: ${_errorMessage(resp)}',
+          resp.statusCode,
+        );
+      }
+
+      final list = jsonDecode(resp.body) as List;
+      if (list.isEmpty) break;
+
+      for (final item in list) {
+        all.add(transactionFromServerJson(item as Map<String, dynamic>));
+      }
+
+      if (list.length < _fetchPageSize) break;
+      offset += _fetchPageSize;
+    }
+
+    return all;
+  }
 
   /// Sincronização em lote — idempotente, pode chamar quantas vezes quiser
   Future<List<SyncedTransaction>> syncBatch(List<Transaction> txs) async {
@@ -161,6 +224,44 @@ class ApiClient {
     return list.map((e) => CategorySuggestion.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  // ── Finance profile ───────────────────────────────────────────────────────
+
+  static FinanceProfile financeProfileFromJson(Map<String, dynamic> j) =>
+      FinanceProfile.fromMap(j);
+
+  /// Retorna `null` se o usuário ainda não tem perfil no servidor (404).
+  Future<FinanceProfile?> fetchFinanceProfile() async {
+    await _loadToken();
+    final resp = await http.get(
+      Uri.parse('$_baseUrl/finance/profile'),
+      headers: _headers,
+    );
+    if (resp.statusCode == 404) return null;
+    if (resp.statusCode != 200) {
+      throw ApiException(
+        'Falha ao buscar perfil financeiro: ${_errorMessage(resp)}',
+        resp.statusCode,
+      );
+    }
+    final data = jsonDecode(resp.body) as Map<String, dynamic>;
+    return financeProfileFromJson(data);
+  }
+
+  Future<void> putFinanceProfile(FinanceProfile profile) async {
+    await _loadToken();
+    final resp = await http.put(
+      Uri.parse('$_baseUrl/finance/profile'),
+      headers: _headers,
+      body: jsonEncode(profile.toMap()),
+    );
+    if (resp.statusCode != 200) {
+      throw ApiException(
+        'Falha ao salvar perfil financeiro: ${_errorMessage(resp)}',
+        resp.statusCode,
+      );
+    }
+  }
+
   // ── Messages ──────────────────────────────────────────────────────────────
 
   Future<List<ContextMessage>> fetchMessages() async {
@@ -182,6 +283,57 @@ class ApiClient {
       body: jsonEncode({'message_id': messageId}),
     );
   }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+
+  Future<NotificationProcessResult?> processNotification({
+    required String packageName,
+    required String title,
+    required String text,
+  }) async {
+    await _loadToken();
+    if (_token == null || _token!.isEmpty) return null;
+    try {
+      final resp = await http.post(
+        Uri.parse('$_baseUrl/notifications/process'),
+        headers: _headers,
+        body: jsonEncode({
+          'package_name': packageName,
+          'title': title,
+          'text': text,
+        }),
+      );
+      if (resp.statusCode != 200) return null;
+      final decoded = jsonDecode(resp.body);
+      if (decoded is! Map<String, dynamic>) return null;
+      return NotificationProcessResult.fromJson(decoded);
+    } catch (e, st) {
+      debugPrint('Falha ao processar notificação: $e\n$st');
+      return null;
+    }
+  }
+
+  /// Null quando não há sessão ou a rede falha — o espelho local permanece.
+  Future<List<AppWhitelistEntry>?> fetchAppWhitelist() async {
+    await _loadToken();
+    if (_token == null || _token!.isEmpty) return null;
+    try {
+      final resp = await http.get(
+        Uri.parse('$_baseUrl/notifications/whitelist'),
+        headers: _headers,
+      );
+      if (resp.statusCode != 200) return null;
+      final decoded = jsonDecode(resp.body);
+      if (decoded is! List) return null;
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .map(AppWhitelistEntry.fromJson)
+          .toList();
+    } catch (e, st) {
+      debugPrint('Falha ao buscar whitelist de apps: $e\n$st');
+      return null;
+    }
+  }
 }
 
 // ── Data classes ─────────────────────────────────────────────────────────────
@@ -196,9 +348,58 @@ class AuthResult {
 class SyncedTransaction {
   final String localId;
   final int    serverId;
-  const SyncedTransaction({required this.localId, required this.serverId});
-  factory SyncedTransaction.fromJson(Map<String, dynamic> j) =>
-      SyncedTransaction(localId: j['local_id'] as String, serverId: j['id'] as int);
+  final bool   suppressedDuplicate;
+  const SyncedTransaction({
+    required this.localId,
+    required this.serverId,
+    this.suppressedDuplicate = false,
+  });
+  factory SyncedTransaction.fromJson(Map<String, dynamic> j) => SyncedTransaction(
+        localId: j['local_id'] as String,
+        serverId: j['id'] as int,
+        suppressedDuplicate: j['suppressed_duplicate'] as bool? ?? false,
+      );
+}
+
+class NotificationProcessResult {
+  final bool accepted;
+  final String reason;
+  final bool cacheHit;
+  final double? amount;
+  final String? place;
+  final String? category;
+  final String? templateHash;
+  final String? templateMask;
+  final bool isCost;
+  final String? extractionRules;
+
+  const NotificationProcessResult({
+    required this.accepted,
+    required this.reason,
+    required this.cacheHit,
+    required this.amount,
+    required this.place,
+    required this.category,
+    required this.templateHash,
+    required this.templateMask,
+    required this.isCost,
+    required this.extractionRules,
+  });
+
+  factory NotificationProcessResult.fromJson(Map<String, dynamic> j) {
+    return NotificationProcessResult(
+      accepted: j['accepted'] as bool? ?? false,
+      reason: j['reason'] as String? ?? '',
+      cacheHit: j['cache_hit'] as bool? ?? false,
+      amount: (j['amount'] as num?)?.toDouble(),
+      place: j['place'] as String?,
+      category: j['category'] as String?,
+      templateHash: j['template_hash'] as String?,
+      templateMask: j['template_mask'] as String?,
+      isCost: j['is_cost'] as bool? ?? false,
+      extractionRules: j['extraction_rules'] as String?,
+    );
+  }
 }
 
 class CategorySuggestion {

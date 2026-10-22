@@ -1,6 +1,5 @@
 import '../models/transaction.dart';
 import 'bank_notification_sources.dart';
-import 'notification_debug_log.dart';
 
 class ParsedNotification {
   final double amount;
@@ -28,78 +27,6 @@ class NotificationAnalyzeResult {
     this.amount,
     this.parsed,
   });
-
-  List<NotificationDebugCheck> buildChecks({
-    required String title,
-    required String body,
-    required String? packageName,
-    required bool handlerRegistered,
-    bool? handlerSucceeded,
-    String? handlerError,
-  }) {
-    final bank = sourceMatch;
-    final hasContent = title.trim().isNotEmpty || body.trim().isNotEmpty;
-    final hasPackage = packageName != null && packageName.isNotEmpty;
-
-    return [
-      const NotificationDebugCheck(
-        id: 'received',
-        label: 'Notificação recebida',
-        ok: true,
-      ),
-      NotificationDebugCheck(
-        id: 'content',
-        label: 'Título ou texto presente',
-        ok: hasContent,
-        detail: hasContent ? null : 'Vazio',
-      ),
-      NotificationDebugCheck(
-        id: 'package',
-        label: 'Pacote Android informado',
-        ok: hasPackage,
-        detail: packageName ?? '(null)',
-      ),
-      NotificationDebugCheck(
-        id: 'bank',
-        label: 'Banco no catálogo',
-        ok: bank != null,
-        detail: bank != null
-            ? '${bank.source.label} (${bank.kind.name})'
-            : 'Pacote/título não bate com banks.md',
-      ),
-      NotificationDebugCheck(
-        id: 'regex',
-        label: 'Valor bate com regex R\$',
-        ok: amountRaw != null,
-        detail: amountRaw ?? 'Nenhum padrão R\$ / 1.234,56 encontrado',
-      ),
-      NotificationDebugCheck(
-        id: 'amount',
-        label: 'Valor numérico válido (> 0)',
-        ok: amount != null && amount! > 0,
-        detail: amount?.toStringAsFixed(2),
-      ),
-      NotificationDebugCheck(
-        id: 'parsed',
-        label: 'Parser montou gasto',
-        ok: parsed != null,
-      ),
-      NotificationDebugCheck(
-        id: 'handler',
-        label: 'App pronto para salvar (handler)',
-        ok: handlerRegistered,
-        detail: handlerRegistered ? null : 'Faça login e abra a home',
-      ),
-      NotificationDebugCheck(
-        id: 'saved',
-        label: 'Salvo no SQLite + lista',
-        ok: handlerSucceeded == true,
-        detail: parsed == null
-            ? 'Parser não concluiu'
-            : handlerError,
-      ),
-    ];
-  }
 }
 
 /// Notificações de bancos do catálogo: extrai somente o valor (R$).

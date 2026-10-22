@@ -7,16 +7,19 @@ import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/finance_profile_provider.dart';
 import 'providers/messages_provider.dart';
+import 'providers/app_lock_provider.dart';
 import 'services/api_client.dart';
 import 'services/notification_service.dart';
+import 'services/notification_action_service.dart';
 import 'services/local_notification_service.dart';
+import 'services/app_preferences.dart';
 import 'services/spending_summary_notification.dart';
 import 'models/transaction.dart';
 import 'screens/home_screen.dart';
 import 'screens/auth_screen.dart';
+import 'screens/app_lock_screen.dart';
 import 'screens/permission_screen.dart';
 import 'services/notification_blocklist.dart';
-import 'services/notification_debug_log.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import 'theme/colors.dart';
@@ -34,15 +37,18 @@ void main() async {
   ));
 
   final api = ApiClient();
+  NotificationService.bindApi(api);
+  final appLockProvider = AppLockProvider();
+  await appLockProvider.init();
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider(api: api)..init()),
         ChangeNotifierProvider(create: (_) => TransactionProvider(api: api)),
-        ChangeNotifierProvider(create: (_) => FinanceProfileProvider()..load()),
+        ChangeNotifierProvider(create: (_) => FinanceProfileProvider(api: api)..load()),
         ChangeNotifierProvider(create: (_) => MessagesProvider(api: api)),
-        ChangeNotifierProvider.value(value: NotificationDebugLog.instance),
+        ChangeNotifierProvider.value(value: appLockProvider),
         ChangeNotifierProvider.value(value: NotificationBlocklist.instance),
       ],
       child: const RastroApp(),
@@ -75,10 +81,19 @@ class _RastroAppState extends State<RastroApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      if (mounted) {
+        context.read<AppLockProvider>().lockIfEnabled();
+      }
+    }
     if (state == AppLifecycleState.resumed) {
       _checkPermission();
       NotificationService.reconnect();
       SpendingSummaryNotification.refresh();
+      if (mounted) {
+        context.read<TransactionProvider>().load();
+      }
     }
   }
 
@@ -136,9 +151,11 @@ class _RootGate extends StatelessWidget {
 
     // Autenticado — handler de gastos ativo em qualquer tela pós-login
     return _AuthenticatedNotificationScope(
-      child: !hasNotifPermission
-          ? PermissionScreen(onGranted: onPermissionCheck)
-          : const _HomeWithSpendingNotification(),
+      child: AppLockGate(
+        child: !hasNotifPermission
+            ? PermissionScreen(onGranted: onPermissionCheck)
+            : const _HomeWithSpendingNotification(),
+      ),
     );
   }
 }
@@ -158,12 +175,24 @@ class _AuthenticatedNotificationScopeState
   void initState() {
     super.initState();
     NotificationService.setTransactionHandler(_onBankNotification);
+    NotificationActionService.setForegroundRefreshHandler(_refreshAfterAction);
   }
 
   @override
   void dispose() {
     NotificationService.setTransactionHandler(null);
+    NotificationActionService.setForegroundRefreshHandler(null);
     super.dispose();
+  }
+
+  /// Recarrega dados após o usuário tocar um botão da notificação com o app aberto.
+  Future<void> _refreshAfterAction() async {
+    if (!mounted) return;
+    final txProv = context.read<TransactionProvider>();
+    final finProv = context.read<FinanceProfileProvider>();
+    await txProv.load();
+    if (!mounted) return;
+    await finProv.refreshSpending();
   }
 
   Future<void> _onBankNotification(Transaction tx) async {
@@ -171,12 +200,15 @@ class _AuthenticatedNotificationScopeState
     final txProv = context.read<TransactionProvider>();
     final finProv = context.read<FinanceProfileProvider>();
     await txProv.addTransaction(tx);
+
+    final raw = tx.rawNotification ?? '';
+    if (!raw.contains(' DEBUG') &&
+        await AppPreferences.transactionAlertEnabled) {
+      await LocalNotificationService.showTransactionAlert(tx);
+    }
+
     if (!mounted) return;
     await finProv.refreshSpending();
-    if (!mounted) return;
-    final raw = tx.rawNotification ?? '';
-    if (raw.contains(' DEBUG')) return;
-    await LocalNotificationService.showTransactionAlert(tx);
   }
 
   @override

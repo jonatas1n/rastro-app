@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../services/local_notification_service.dart';
 import '../services/notification_service.dart';
 import '../theme/colors.dart';
 
@@ -37,6 +38,7 @@ class PermissionScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
+                    await LocalNotificationService.ensureAndroidPostPermission();
                     await NotificationService.requestPermission();
                     await NotificationService.init();
                     onGranted();

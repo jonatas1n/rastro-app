@@ -58,6 +58,15 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
     super.dispose();
   }
 
+  /// Texto da notificação bancária salvo com o gasto.
+  /// Lançamentos manuais guardam uma tag (`manual:...`) nesse campo — ignorada.
+  String? get _originalNotificationText {
+    final raw = widget.tx.rawNotification;
+    if (raw == null || raw.trim().isEmpty) return null;
+    if (raw.startsWith('manual:')) return null;
+    return raw.replaceFirst(' | ', '\n').trim();
+  }
+
   Future<void> _save() async {
     final amount = parseBrMoney(_amountCtrl.text);
     if (_placeCtrl.text.trim().isEmpty || amount == null || amount <= 0) {
@@ -205,6 +214,34 @@ class _EditTransactionSheetState extends State<_EditTransactionSheet> {
               });
             },
           ),
+          if (_originalNotificationText != null) ...[
+            const SizedBox(height: 16),
+            Text(
+              'Notificação original',
+              style: GoogleFonts.outfit(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: RastroColors.sub,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: RastroColors.card,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: RastroColors.border),
+              ),
+              child: Text(
+                _originalNotificationText!,
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  color: RastroColors.muted,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,

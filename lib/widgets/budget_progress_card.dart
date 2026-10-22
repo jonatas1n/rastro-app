@@ -18,7 +18,8 @@ class BudgetProgressCard extends StatelessWidget {
 
     final p = fin.profile;
     if (!p.hasIncome && !p.hasAnyGoal) {
-      return _SetupPrompt();
+      if (fin.incomeSetupDismissed) return const SizedBox.shrink();
+      return const _SetupPrompt();
     }
 
     final fmt = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -87,33 +88,59 @@ class BudgetProgressCard extends StatelessWidget {
 }
 
 class _SetupPrompt extends StatelessWidget {
+  const _SetupPrompt();
+
   @override
   Widget build(BuildContext context) {
     return RastroCard(
       padding: const EdgeInsets.all(14),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          Padding(
+            padding: const EdgeInsets.only(right: 24),
+            child: Row(
               children: [
-                Text('Configure sua renda e metas',
-                    style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w700,
-                        color: RastroColors.text)),
-                const SizedBox(height: 4),
-                Text('Defina quanto ganha e limites de gasto.',
-                    style: GoogleFonts.outfit(
-                        fontSize: 11, color: RastroColors.muted)),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Configure sua renda e metas',
+                          style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w700,
+                              color: RastroColors.text)),
+                      const SizedBox(height: 4),
+                      Text('Defina quanto ganha e limites de gasto.',
+                          style: GoogleFonts.outfit(
+                              fontSize: 11, color: RastroColors.muted)),
+                    ],
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const FinanceSettingsScreen()),
+                  ),
+                  child: const Text('Configurar'),
+                ),
               ],
             ),
           ),
-          TextButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const FinanceSettingsScreen()),
+          Positioned(
+            top: -6,
+            right: -6,
+            child: IconButton(
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              tooltip: 'Fechar',
+              onPressed: () => context
+                  .read<FinanceProfileProvider>()
+                  .dismissIncomeSetupPrompt(),
+              icon: const Icon(Icons.close_rounded,
+                  size: 18, color: RastroColors.muted),
             ),
-            child: const Text('Configurar'),
           ),
         ],
       ),

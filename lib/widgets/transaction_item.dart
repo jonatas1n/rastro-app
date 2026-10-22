@@ -17,8 +17,7 @@ Color _catColor(TransactionCategory cat) => switch (cat) {
 
 class TransactionItem extends StatelessWidget {
   final Transaction tx;
-  final VoidCallback onToggle;
-  final VoidCallback? onEdit;
+  final VoidCallback onTap;
   final VoidCallback? onLongPress;
   final bool selecting;
   final bool selected;
@@ -26,8 +25,7 @@ class TransactionItem extends StatelessWidget {
   const TransactionItem({
     super.key,
     required this.tx,
-    required this.onToggle,
-    this.onEdit,
+    required this.onTap,
     this.onLongPress,
     this.selecting = false,
     this.selected = false,
@@ -42,7 +40,7 @@ class TransactionItem extends StatelessWidget {
                       '${tx.timestamp.minute.toString().padLeft(2, '0')}';
 
     return GestureDetector(
-      onTap: onToggle,
+      onTap: onTap,
       onLongPress: selecting ? null : onLongPress,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -138,12 +136,6 @@ class TransactionItem extends StatelessWidget {
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                if (onEdit != null && !selecting)
-                  GestureDetector(
-                    onTap: onEdit,
-                    child: Icon(Icons.edit_outlined,
-                        size: 14, color: RastroColors.muted.withValues(alpha: 0.8)),
-                  ),
                 FmtValue(
                   amount:        tx.amount,
                   size:          15,

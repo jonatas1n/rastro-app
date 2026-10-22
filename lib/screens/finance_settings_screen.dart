@@ -9,6 +9,7 @@ import '../widgets/shared.dart';
 import '../services/spending_summary_notification.dart';
 import '../services/app_preferences.dart';
 import '../services/spending_insight_prefs.dart';
+import '../providers/app_lock_provider.dart';
 
 class FinanceSettingsScreen extends StatefulWidget {
   const FinanceSettingsScreen({super.key});
@@ -30,10 +31,13 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
   bool _monthEndOn = false;
   bool _saving = false;
   bool _persistentNotif = true;
+  bool _transactionAlert = true;
   bool _loadingNotifPref = true;
   bool _insightAlerts = true;
   bool _dailySummary22 = true;
   bool _loadingInsightPrefs = true;
+  bool _appLock = false;
+  bool _loadingAppLock = true;
 
   @override
   void initState() {
@@ -42,6 +46,17 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
     _fill(p);
     _loadNotifPref();
     _loadInsightPrefs();
+    _loadAppLockPref();
+  }
+
+  Future<void> _loadAppLockPref() async {
+    await context.read<AppLockProvider>().refreshDeviceAuthAvailability();
+    if (!mounted) return;
+    final lock = context.read<AppLockProvider>();
+    setState(() {
+      _appLock = lock.enabled;
+      _loadingAppLock = false;
+    });
   }
 
   Future<void> _loadInsightPrefs() async {
@@ -57,9 +72,11 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
 
   Future<void> _loadNotifPref() async {
     final on = await AppPreferences.persistentSpendingSummaryEnabled;
+    final txAlert = await AppPreferences.transactionAlertEnabled;
     if (!mounted) return;
     setState(() {
       _persistentNotif = on;
+      _transactionAlert = txAlert;
       _loadingNotifPref = false;
     });
   }
@@ -117,11 +134,19 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
       monthEndTargetBalance:
           _monthEndOn ? parseBrMoney(_monthEndBalanceCtrl.text) : null,
     );
-    await context.read<FinanceProfileProvider>().save(profile);
-    if (mounted) {
-      setState(() => _saving = false);
-      Navigator.pop(context);
+    final syncErr =
+        await context.read<FinanceProfileProvider>().save(profile);
+    if (!mounted) return;
+    setState(() => _saving = false);
+    if (syncErr != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(syncErr),
+          backgroundColor: RastroColors.danger,
+        ),
+      );
     }
+    Navigator.pop(context);
   }
 
   @override
@@ -216,6 +241,35 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
             child: SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: Text(
+                'Aviso a cada gasto',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600,
+                  color: RastroColors.text,
+                ),
+              ),
+              subtitle: Text(
+                'Notifica cada compra detectada, com botões para marcar como essencial ou descartar.',
+                style: GoogleFonts.outfit(
+                  fontSize: 11,
+                  color: RastroColors.muted,
+                ),
+              ),
+              value: _transactionAlert,
+              onChanged: _loadingNotifPref
+                  ? null
+                  : (v) async {
+                      setState(() => _transactionAlert = v);
+                      await AppPreferences.setTransactionAlertEnabled(v);
+                    },
+              activeColor: RastroColors.accent,
+            ),
+          ),
+          const SizedBox(height: 10),
+          RastroCard(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            child: SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
                 'Resumo fixo na barra',
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.w600,
@@ -296,6 +350,69 @@ class _FinanceSettingsScreenState extends State<FinanceSettingsScreen> {
                     },
               activeColor: RastroColors.accent,
             ),
+          ),
+          const SizedBox(height: 24),
+          SectionLabel(title: 'Segurança'),
+          Builder(
+            builder: (context) {
+              final lockProv = context.watch<AppLockProvider>();
+              final canUse = lockProv.deviceAuthAvailable;
+              return RastroCard(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                child: SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    'Bloqueio do app',
+                    style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.w600,
+                      color: RastroColors.text,
+                    ),
+                  ),
+                  subtitle: Text(
+                    canUse
+                        ? 'Exigir senha ou digital para abrir o app.'
+                        : 'Configure um PIN, padrão ou digital nas configurações do Android para usar esta opção.',
+                    style: GoogleFonts.outfit(
+                      fontSize: 11,
+                      color: RastroColors.muted,
+                    ),
+                  ),
+                  value: _appLock,
+                  onChanged: _loadingAppLock || !canUse || lockProv.authenticating
+                      ? null
+                      : (v) async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final result = await lockProv.setEnabled(v);
+                          if (!mounted) return;
+                          if (result == AppLockToggleResult.success) {
+                            setState(() => _appLock = v);
+                            return;
+                          }
+                          if (result == AppLockToggleResult.authFailed) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Não foi possível confirmar sua identidade.',
+                                  style: GoogleFonts.outfit(),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          messenger.showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Este dispositivo não tem bloqueio de tela configurado.',
+                                style: GoogleFonts.outfit(),
+                              ),
+                            ),
+                          );
+                        },
+                  activeColor: RastroColors.accent,
+                ),
+              );
+            },
           ),
           const SizedBox(height: 24),
           SizedBox(

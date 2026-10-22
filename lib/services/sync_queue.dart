@@ -62,6 +62,10 @@ class SyncQueue {
 
       // Marca como sincronizadas no SQLite
       for (final s in synced) {
+        if (s.suppressedDuplicate) {
+          await _db.delete(s.localId);
+          continue;
+        }
         await _db.markSynced(s.localId, s.serverId);
       }
 

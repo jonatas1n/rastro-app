@@ -1,0 +1,8 @@
+Versão 1.0.1
+
+• Bloqueio do app por senha ou digital — você escolhe nas configurações.
+• Ao entrar na mesma conta (ou reinstalar), seus gastos e metas voltam do servidor.
+• Renda e metas sincronizadas entre aparelho e nuvem.
+• Melhorias e correções gerais.
+
+Obrigado por testar o Rastro!

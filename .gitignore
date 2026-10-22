@@ -1,4 +1,9 @@
+# Ambiente e segredos
+.env
+.env.*
+
 # Miscellaneous
+Thumbs.db
 *.class
 *.log
 *.pyc

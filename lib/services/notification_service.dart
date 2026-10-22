@@ -4,15 +4,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_notification_listener/flutter_notification_listener.dart';
 
 import '../models/transaction.dart';
-import 'local_notification_service.dart';
+import 'api_client.dart';
 import 'notification_blocklist.dart';
-import 'notification_debug_log.dart';
-import 'notification_parser.dart';
+import 'notification_pipeline.dart';
 
 typedef NotificationTransactionHandler = Future<void> Function(Transaction tx);
 
 /// Deve bater com `applicationId` em `android/app/build.gradle.kts`.
-const kRastroAndroidPackage = 'com.example.rastro';
+const kRastroAndroidPackage = 'com.jotadevsol.rastro';
 
 /// Callback no isolate de background — precisa de [pragma] no APK release.
 /// Encaminha para [NotificationsListener.receivePort] (nome oficial do plugin).
@@ -29,6 +28,11 @@ class NotificationService {
   static bool _uiListening = false;
   static bool _pluginInitialized = false;
   static NotificationTransactionHandler? _onTransaction;
+  static ApiClient? _api;
+
+  static void bindApi(ApiClient api) {
+    _api = api;
+  }
 
   static void setTransactionHandler(NotificationTransactionHandler? handler) {
     _onTransaction = handler;
@@ -50,16 +54,8 @@ class NotificationService {
 
     final granted = await hasPermission;
     if (granted) {
-      final running = await isServiceRunning;
-      if (running != true) {
-        await NotificationsListener.startService(
-          title: 'Rastro',
-          description: 'Escutando notificações bancárias',
-        );
-      }
+      await _ensureBackgroundService();
     }
-
-    await _recordDiagnostics('init');
   }
 
   /// Reaplica ponte após retomar o app (evita perder eventos).
@@ -73,7 +69,33 @@ class NotificationService {
       await init();
       return;
     }
-    await _recordDiagnostics('reconnect');
+    if (await hasPermission) {
+      await _ensureBackgroundService();
+    }
+  }
+
+  /// Persiste `foreground: false` e reinicia o listener para cancelar FGS antigo.
+  ///
+  /// O plugin guarda [PromoteServiceConfig] em SharedPreferences e, no
+  /// `onCreate` do serviço Android, promove de novo se `foreground == true`.
+  /// Se o serviço já estiver rodando com config antiga, pular `startService`
+  /// deixa a notificação "Escutando…" visível indefinidamente.
+  static Future<void> _ensureBackgroundService() async {
+    try {
+      await NotificationsListener.startService(foreground: false);
+    } catch (e, st) {
+      debugPrint(
+        'NotificationService: falha ao iniciar serviço em background: $e\n$st',
+      );
+      return;
+    }
+    try {
+      await NotificationsListener.demoteToBackground();
+    } catch (e, st) {
+      debugPrint(
+        'NotificationService: demoteToBackground ignorado ou indisponível: $e\n$st',
+      );
+    }
   }
 
   static void _ensureUiPort() {
@@ -88,20 +110,6 @@ class NotificationService {
   static Future<bool> get isServiceRunning async =>
       await NotificationsListener.isRunning ?? false;
 
-  static Future<Map<String, bool>> get diagnostics async {
-    final portOk = IsolateNameServer.lookupPortByName(
-          NotificationsListener.SEND_PORT_NAME,
-        ) !=
-        null;
-    return {
-      'pluginInitialized': _pluginInitialized,
-      'uiPortRegistered': portOk,
-      'uiListening': _uiListening,
-      'hasPermission': await hasPermission,
-      'serviceRunning': await isServiceRunning,
-    };
-  }
-
   static Future<bool> requestPermission() async {
     await NotificationsListener.openPermissionSettings();
     return await hasPermission;
@@ -111,63 +119,9 @@ class NotificationService {
     await NotificationsListener.stopService();
   }
 
-  static Future<void> _recordDiagnostics(String reason) async {
-    final d = await diagnostics;
-    final lines = d.entries.map((e) => '${e.key}: ${e.value}').join('\n');
-    NotificationDebugLog.instance.addSystem(
-      title: 'Diagnóstico ($reason)',
-      body: lines,
-    );
-  }
-
-  static int _debugSampleIndex = 0;
-
-  static const _debugSamples = [
-    (
-      packageName: 'com.nu.production',
-      title: 'Compra no débito',
-      body: 'R\$ 87,30 em SUPERMERCADO DEBUG',
-    ),
-    (
-      packageName: 'com.itau',
-      title: 'Compra aprovada',
-      body: 'Cartão final 1234 · R\$ 42,50 · PADARIA DEBUG',
-    ),
-    (
-      packageName: 'br.com.bb.android',
-      title: 'BB',
-      body: 'Compra de R\$ 15,99 aprovada em LOJA DEBUG',
-    ),
-  ];
-
-  /// Notificação na barra + um evento simulado (sem eco pelo listener).
-  static Future<void> triggerDebugTestNotification() async {
-    final sample = _debugSamples[
-        _debugSampleIndex % _debugSamples.length];
-    _debugSampleIndex++;
-
-    final evt = NotificationEvent(
-      uniqueId: 'debug-${DateTime.now().millisecondsSinceEpoch}',
-      packageName: sample.packageName,
-      title: sample.title,
-      text: sample.body,
-      createAt: DateTime.now(),
-    );
-
-    await LocalNotificationService.showDebugTestNotification(
-      title: sample.title,
-      body: sample.body,
-    );
-
-    await _handleNotificationEvent(evt);
-  }
-
   static void _onEvent(dynamic event) async {
     if (event is! NotificationEvent) {
-      NotificationDebugLog.instance.addSystem(
-        title: 'Evento ignorado',
-        body: 'Tipo inesperado: ${event.runtimeType}',
-      );
+      debugPrint('NotificationService: evento ignorado (${event.runtimeType})');
       return;
     }
     await _handleNotificationEvent(event);
@@ -185,60 +139,21 @@ class NotificationService {
       return;
     }
 
-    final analysis = NotificationParser.analyze(
-      title,
-      body,
-      packageName: packageName,
-    );
-
-    final handlerRegistered = _onTransaction != null;
-    bool? handlerSucceeded;
-    String? handlerError;
-
-    final parsed = analysis.parsed;
-    if (parsed != null && handlerRegistered) {
-      final tx = Transaction(
-        place: parsed.place,
-        amount: parsed.amount,
-        category: parsed.category,
-        timestamp: DateTime.now(),
-        isEssential: true,
-        rawNotification: '$title | $body',
-      );
-      try {
-        await _onTransaction!(tx);
-        handlerSucceeded = true;
-      } catch (e, st) {
-        handlerSucceeded = false;
-        handlerError = e.toString();
-        debugPrint('NotificationService: falha ao registrar gasto: $e\n$st');
-      }
-    } else if (parsed != null && !handlerRegistered) {
-      handlerSucceeded = false;
-      handlerError = 'Handler não registrado';
-    }
-
-    final checks = analysis.buildChecks(
+    final tx = await NotificationPipeline(api: _api).resolve(
       title: title,
       body: body,
       packageName: packageName,
-      handlerRegistered: handlerRegistered,
-      handlerSucceeded: parsed != null ? handlerSucceeded : null,
-      handlerError: handlerError,
     );
+    if (tx == null) return;
 
-    NotificationDebugLog.instance.add(
-      NotificationDebugEntry(
-        id: '${DateTime.now().millisecondsSinceEpoch}',
-        at: DateTime.now(),
-        packageName: packageName,
-        title: title,
-        body: body,
-        checks: checks,
-      ),
-    );
+    final handler = _onTransaction;
+    if (handler == null) return;
 
-    if (parsed == null || handlerSucceeded != true) return;
+    try {
+      await handler(tx);
+    } catch (e, st) {
+      debugPrint('NotificationService: falha ao registrar gasto: $e\n$st');
+    }
   }
 
   static bool _isOwnAppNotification(String? packageName) {

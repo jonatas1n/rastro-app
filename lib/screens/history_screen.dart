@@ -15,7 +15,17 @@ class HistoryScreen extends StatefulWidget {
   /// Abre já filtrado para o dia atual.
   final bool todayOnly;
 
-  const HistoryScreen({super.key, this.todayOnly = false});
+  /// Segunda página do dashboard — sem [Scaffold] extra; [onBack] em vez de pop.
+  final bool embedded;
+
+  final VoidCallback? onBack;
+
+  const HistoryScreen({
+    super.key,
+    this.todayOnly = false,
+    this.embedded = false,
+    this.onBack,
+  });
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -39,7 +49,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         DateTime(now.year, now.month, now.day, 23, 59, 59),
       );
     } else {
-      _prov.load();
+      // Lista padrão usa TransactionProvider (janelas de 7 dias).
     }
   }
 
@@ -52,6 +62,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _onScroll() {
+    if (_prov.filter.isEmpty) return;
     if (_scrollCtrl.position.pixels >=
         _scrollCtrl.position.maxScrollExtent - 200) {
       _prov.loadMore();
@@ -60,26 +71,29 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final column = Column(
+      children: [
+        _TopBar(
+          searchCtrl: _searchCtrl,
+          showFilters: _showFilters,
+          onToggleFilters: () => setState(() => _showFilters = !_showFilters),
+          onSearch: _prov.setQuery,
+          onBack: widget.onBack,
+        ),
+        if (_showFilters) _FilterRow(prov: _prov),
+        _SummaryStrip(),
+        Expanded(child: _ResultsList(scrollCtrl: _scrollCtrl)),
+      ],
+    );
+
     return ChangeNotifierProvider.value(
       value: _prov,
-      child: Scaffold(
-        backgroundColor: RastroColors.base,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _TopBar(
-                searchCtrl:    _searchCtrl,
-                showFilters:   _showFilters,
-                onToggleFilters: () => setState(() => _showFilters = !_showFilters),
-                onSearch:      _prov.setQuery,
-              ),
-              if (_showFilters) _FilterRow(prov: _prov),
-              _SummaryStrip(),
-              Expanded(child: _ResultsList(scrollCtrl: _scrollCtrl)),
-            ],
-          ),
-        ),
-      ),
+      child: widget.embedded
+          ? ColoredBox(color: RastroColors.base, child: column)
+          : Scaffold(
+              backgroundColor: RastroColors.base,
+              body: SafeArea(child: column),
+            ),
     );
   }
 }
@@ -88,15 +102,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
 class _TopBar extends StatelessWidget {
   final TextEditingController searchCtrl;
-  final bool       showFilters;
+  final bool showFilters;
   final VoidCallback onToggleFilters;
   final void Function(String) onSearch;
+  final VoidCallback? onBack;
 
   const _TopBar({
     required this.searchCtrl,
     required this.showFilters,
     required this.onToggleFilters,
     required this.onSearch,
+    this.onBack,
   });
 
   @override
@@ -113,7 +129,13 @@ class _TopBar extends StatelessWidget {
             constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
             icon: const Icon(Icons.arrow_back_ios_new_rounded,
                 color: RastroColors.sub, size: 18),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              if (onBack != null) {
+                onBack!();
+                return;
+              }
+              Navigator.pop(context);
+            },
           ),
           Expanded(
             child: Container(
@@ -393,12 +415,48 @@ class _DateRangeButton extends StatelessWidget {
 class _SummaryStrip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    final prov = context.watch<HistoryProvider>();
-    if (prov.results.isEmpty && !prov.loading) return const SizedBox.shrink();
+    final histProv = context.watch<HistoryProvider>();
+    final hasFilter = !histProv.filter.isEmpty;
 
-    final nonEss    = prov.filteredNonEssential;
-    final total     = prov.filteredTotal;
-    final nonEssPct = total > 0 ? (nonEss / total * 100).round() : 0;
+    if (hasFilter) {
+      if (histProv.results.isEmpty && !histProv.loading) {
+        return const SizedBox.shrink();
+      }
+      return _SummaryContent(
+        countLabel: '${histProv.total} gastos',
+        total: histProv.filteredTotal,
+        nonEssential: histProv.filteredNonEssential,
+      );
+    }
+
+    final txProv = context.watch<TransactionProvider>();
+    if (txProv.loading && txProv.historyWindowTransactions.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final count = txProv.historyWindowTransactions.length;
+    return _SummaryContent(
+      countLabel: count == 1 ? '1 gasto' : '$count gastos',
+      total: txProv.historyWindowTotal,
+      nonEssential: txProv.historyWindowNonEssential,
+    );
+  }
+}
+
+class _SummaryContent extends StatelessWidget {
+  final String countLabel;
+  final double total;
+  final double nonEssential;
+
+  const _SummaryContent({
+    required this.countLabel,
+    required this.total,
+    required this.nonEssential,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final nonEssPct = total > 0 ? (nonEssential / total * 100).round() : 0;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(14, 0, 14, 10),
@@ -411,15 +469,15 @@ class _SummaryStrip extends StatelessWidget {
       child: Row(
         children: [
           Expanded(child: _StatCell(
-            label: '${prov.total} gastos',
+            label: countLabel,
             value: total,
           )),
           _Divider(),
           Expanded(child: _StatCell(
             label: 'Não-essencial',
-            value: nonEss,
-            color: nonEss > 0 ? RastroColors.danger : RastroColors.muted,
-            suffix: nonEss > 0 ? ' ($nonEssPct%)' : '',
+            value: nonEssential,
+            color: nonEssential > 0 ? RastroColors.danger : RastroColors.muted,
+            suffix: nonEssential > 0 ? ' ($nonEssPct%)' : '',
           )),
         ],
       ),
@@ -475,75 +533,202 @@ class _ResultsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final prov  = context.watch<HistoryProvider>();
-    final txProv = context.read<TransactionProvider>();
+    final histProv = context.watch<HistoryProvider>();
+    final hasFilter = !histProv.filter.isEmpty;
 
+    if (hasFilter) {
+      return _FilteredResultsList(scrollCtrl: scrollCtrl, prov: histProv);
+    }
+
+    return _WindowedResultsList(scrollCtrl: scrollCtrl);
+  }
+}
+
+class _WindowedResultsList extends StatelessWidget {
+  final ScrollController scrollCtrl;
+  const _WindowedResultsList({required this.scrollCtrl});
+
+  @override
+  Widget build(BuildContext context) {
+    final txProv = context.watch<TransactionProvider>();
+
+    if (txProv.loading && txProv.historyWindowTransactions.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(
+          color: RastroColors.accent,
+          strokeWidth: 2,
+        ),
+      );
+    }
+
+    final days = txProv.historyVisibleDays;
+    final byDay = txProv.historyByDay;
+    final extra = txProv.hasMoreHistory ? 1 : 0;
+
+    return ListView.builder(
+      controller: scrollCtrl,
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 32),
+      itemCount: days.length + extra,
+      itemBuilder: (ctx, i) {
+        if (i == days.length) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: TextButton(
+                onPressed: () => txProv.loadMoreHistory(),
+                child: Text(
+                  'Carregar mais',
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: RastroColors.accent,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        return _DaySection(day: days[i], txs: byDay[days[i]] ?? const []);
+      },
+    );
+  }
+}
+
+class _FilteredResultsList extends StatelessWidget {
+  final ScrollController scrollCtrl;
+  final HistoryProvider prov;
+
+  const _FilteredResultsList({
+    required this.scrollCtrl,
+    required this.prov,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     if (prov.loading && prov.results.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: RastroColors.accent, strokeWidth: 2));
+      return const Center(
+        child: CircularProgressIndicator(
+          color: RastroColors.accent,
+          strokeWidth: 2,
+        ),
+      );
     }
 
     if (!prov.loading && prov.results.isEmpty) {
-      return _EmptyState(hasFilter: !prov.filter.isEmpty);
+      return const _EmptyState(hasFilter: true);
     }
 
+    final byDay = prov.byDay;
     final days = prov.sortedDays;
 
     return ListView.builder(
       controller: scrollCtrl,
-      padding:    const EdgeInsets.fromLTRB(14, 0, 14, 32),
-      itemCount:  days.length + (prov.hasMore ? 1 : 0),
+      padding: const EdgeInsets.fromLTRB(14, 0, 14, 32),
+      itemCount: days.length + (prov.hasMore ? 1 : 0),
       itemBuilder: (ctx, i) {
         if (i == days.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: CircularProgressIndicator(color: RastroColors.accent, strokeWidth: 2)),
+            child: Center(
+              child: CircularProgressIndicator(
+                color: RastroColors.accent,
+                strokeWidth: 2,
+              ),
+            ),
           );
         }
 
-        final day  = days[i];
-        final txs  = prov.byDay[day]!;
-        final dayTotal = txs.fold(0.0, (s, t) => s + t.amount);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Day header
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 18, 0, 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _dayLabel(day),
-                    style: GoogleFonts.outfit(
-                        fontSize: 12, fontWeight: FontWeight.w700, color: RastroColors.sub),
-                  ),
-                  FmtValue(amount: dayTotal, size: 12, color: RastroColors.muted),
-                ],
-              ),
-            ),
-            // Transactions
-            ...txs.map((tx) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: TransactionItem(
-                tx:       tx,
-                onToggle: () => txProv.toggleEssential(tx),
-                onEdit:   () => showEditTransactionSheet(context, tx),
-              ),
-            )),
-          ],
-        );
+        final day = days[i];
+        return _DaySection(day: day, txs: byDay[day] ?? const []);
       },
     );
   }
+}
+
+class _DaySection extends StatelessWidget {
+  final DateTime day;
+  final List<Transaction> txs;
+
+  const _DaySection({required this.day, required this.txs});
+
+  @override
+  Widget build(BuildContext context) {
+    final dayTotal = txs.fold(0.0, (s, t) => s + t.amount);
+    final isToday = _isSameCalendarDay(day, DateTime.now());
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 18, 0, 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                _dayLabel(day),
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: RastroColors.sub,
+                ),
+              ),
+              FmtValue(
+                amount: dayTotal,
+                size: 12,
+                color: RastroColors.muted,
+              ),
+            ],
+          ),
+        ),
+        if (txs.isEmpty && isToday)
+          const _EmptyDayNote()
+        else
+          ...txs.map(
+            (tx) => Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: TransactionItem(
+                tx: tx,
+                onTap: () => showEditTransactionSheet(context, tx),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  static bool _isSameCalendarDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
 
   String _dayLabel(DateTime day) {
-    final now   = DateTime.now();
+    final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
-    final diff  = today.difference(day).inDays;
+    final d = DateTime(day.year, day.month, day.day);
+    final diff = today.difference(d).inDays;
     if (diff == 0) return 'Hoje';
     if (diff == 1) return 'Ontem';
-    return DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(day);
+    return DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(d);
+  }
+}
+
+class _EmptyDayNote extends StatelessWidget {
+  const _EmptyDayNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+      decoration: BoxDecoration(
+        color: RastroColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: RastroColors.border),
+      ),
+      child: Text(
+        'Nenhum gasto hoje',
+        style: GoogleFonts.outfit(fontSize: 13, color: RastroColors.muted),
+      ),
+    );
   }
 }
 

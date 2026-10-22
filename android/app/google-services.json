@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "998243403799",
+    "project_id": "rastro-cfad2",
+    "storage_bucket": "rastro-cfad2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998243403799:android:254e12e8c4f3b38da7b452",
+        "android_client_info": {
+          "package_name": "com.jotadevsol.rastro"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCN8IhbeiFQdkPJX_L1U7B7bJFL0VNAYs0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
